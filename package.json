@@ -1,0 +1,15 @@
+{
+  "name": "nyc-roleplay-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A New York City roleplay profile portal with Discord sign-in.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  }
+}

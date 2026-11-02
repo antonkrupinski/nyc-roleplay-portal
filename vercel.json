@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/department-week-reset",
+      "schedule": "0 4 * * *"
+    }
+  ],
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "{index.html,app.js,styles.css,public/**/*}"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index?__route=/$1"
+    }
+  ]
+}

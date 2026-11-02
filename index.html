@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080a0d">
+    <meta name="description" content="Your New York City roleplay profile, all in one place.">
+    <title>NYC Roleplay — Profile</title>
+    <link rel="icon" type="image/png" href="/favicon.png?v=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css?v=1.0.34">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="#profile" data-route="profile" aria-label="New York City Roleplay home">
+          <span class="brand-mark"><img src="/assets/nyc-mark.png" alt=""></span>
+          <span class="brand-copy"><strong>NYC ROLEPLAY</strong><small>New York City</small></span>
+        </a>
+
+        <div class="nav-section">
+          <span class="nav-label">CIVILIAN</span>
+          <nav aria-label="Civilian navigation">
+            <a class="nav-link" href="#profile" data-route="profile"><span class="nav-icon">◉</span>Profile</a>
+            <a class="nav-link" href="#events" data-route="events"><span class="nav-icon">▦</span>Events <span class="nav-count">03</span></a>
+            <a class="nav-link" href="#licenses" data-route="licenses"><span class="nav-icon">▤</span>Licenses</a>
+            <a class="nav-link" href="#wallet" data-route="wallet"><span class="nav-icon">▣</span>Wallet</a>
+            <a class="nav-link" href="#businesses" data-route="businesses"><span class="nav-icon">▥</span>Businesses</a>
+            <a class="nav-link" href="#market" data-route="market"><span class="nav-icon">↗</span>Market</a>
+            <a class="nav-link" href="#shop" data-route="shop"><span class="nav-icon">▧</span>Shop</a>
+            <a class="nav-link" href="#vehicles" data-route="vehicles"><span class="nav-icon">▰</span>Vehicles</a>
+          </nav>
+        </div>
+
+        <div class="nav-section departments">
+          <span class="nav-label">CITY DEPARTMENTS</span>
+          <nav aria-label="City departments" id="department-nav">
+            <a class="nav-link" href="#city-hall" data-route="city-hall"><span class="dept-dot blue">✦</span>City Hall</a>
+          </nav>
+        </div>
+
+        <div class="nav-section admin-nav-section" id="admin-nav-section" hidden>
+          <span class="nav-label">ADMINISTRATION</span>
+          <nav aria-label="Administration"><a class="nav-link" href="#admin" data-route="admin"><span class="nav-icon">⚙</span>Admin</a></nav>
+        </div>
+
+        <div class="sidebar-spacer"></div>
+        <div class="city-note"><span class="live-pulse"></span><span><strong>NEW YORK CITY</strong><small>Five boroughs. One story.</small></span><span class="weather">72°</span></div>
+        <div class="sidebar-user">
+          <div class="avatar" id="sidebar-avatar">NY</div>
+          <div class="user-meta"><strong id="sidebar-name">City resident</strong><small id="sidebar-role">Civilian · New York</small></div>
+          <button class="more-button" id="account-button" aria-label="Account options">•••</button>
+        </div>
+        <button class="signin-link" id="sidebar-signin"><span>◉</span><span id="signin-label">Connect Discord</span><span class="arrow">↗</span></button>
+      </aside>
+
+      <main class="main-area" id="app">
+        <header class="topbar">
+          <button class="menu-toggle" id="menu-toggle" aria-label="Open navigation">☰</button>
+          <div class="breadcrumb"><span class="breadcrumb-icon">◫</span><span id="breadcrumb-title">Profile</span><span class="crumb-divider">/</span><span class="muted" id="breadcrumb-section">Civilian</span></div>
+          <div class="topbar-right">
+            <span class="city-status" title="Live ER:LC server status"><span class="live-pulse"></span><span id="server-live-label">ER:LC CONNECTING</span></span>
+            <button class="wallet-pill" data-route="wallet"><span class="wallet-icon">▣</span><span id="wallet-balance">C$ 3,325</span></button>
+            <button class="top-avatar" id="top-avatar" aria-label="Open account">NY</button>
+          </div>
+        </header>
+
+        <div class="page-content">
+          <section class="route-page is-active" data-page="profile">
+          <div class="page-heading">
+            <div>
+              <div class="eyebrow"><span>YOUR CITY IDENTITY</span><i></i><span>01 / 05 BOROUGHS</span></div>
+              <h1>Your profile<span class="heading-period">.</span></h1>
+              <p class="heading-subtitle">A little piece of New York that’s all yours.</p>
+            </div>
+            <button class="button button-outline heading-edit" id="edit-profile-top"><span>✎</span> Edit profile</button>
+          </div>
+
+          <section class="dashboard-grid" aria-label="Profile dashboard">
+            <div class="side-rail left-rail">
+              <article class="side-card borough-card">
+                <div class="side-card-top"><span class="section-kicker">YOUR BOROUGH</span><span class="tiny-dot"></span></div>
+                <div class="borough-art" aria-hidden="true"><span class="borough-sun"></span><span class="skyline skyline-back"></span><span class="skyline skyline-front"></span><span class="borough-water"></span><span class="borough-label">NYC <b>05</b></span></div>
+                <h3 id="borough-title">Manhattan</h3>
+                <p id="borough-caption">The city that never slows down.</p>
+                <div class="borough-footer"><span>NEIGHBORHOOD</span><b id="neighborhood-caption">Lower East Side</b></div>
+              </article>
+              <article class="side-card connection-card">
+                <div class="card-icon">⌁</div>
+                <div><span class="section-kicker">YOUR CONNECTION</span><h3 id="connection-name">Not connected</h3><p id="connection-caption">Sign in with Discord to save your profile anywhere.</p></div>
+                <button class="text-link" id="connect-inline">Connect <span>↗</span></button>
+              </article>
+            </div>
+
+            <div class="center-column">
+              <div class="identity-card-wrap">
+                <div class="identity-card" id="identity-card">
+                  <div class="id-face id-front">
+                    <div class="id-grain"></div>
+                    <div class="id-topline"><span>NEW YORK CITY</span><span>RESIDENT IDENTIFICATION</span><span>EST. 1624</span></div>
+                    <div class="id-header">
+                      <div class="id-emblem"><img src="/assets/nyc-mark.png" alt=""><span>NYC</span></div>
+                      <div class="id-title"><span class="id-overline">THE CITY OF NEW YORK</span><strong>RESIDENT CARD</strong><span class="id-subtitle">FIVE BOROUGHS · ONE CITY</span></div>
+                      <div class="id-seal"><span>✦</span><small>NEW<br>YORK</small></div>
+                    </div>
+                    <div class="id-rule"><span></span><i>✦</i><span></span></div>
+                    <div class="id-main">
+                      <div class="portrait-frame" id="resident-portrait-frame"><div class="portrait-sky"></div><div class="portrait-head"><span class="portrait-hair"></span><span class="portrait-eyes"></span><span class="portrait-nose"></span><span class="portrait-smile"></span></div><img class="portrait-image" id="resident-avatar" alt="Your Roblox avatar"><span class="portrait-code" id="portrait-code">NYC · 001</span></div>
+                      <div class="id-details">
+                        <div class="id-field field-name"><small>01 · FULL NAME</small><strong id="id-name">Alex Morgan</strong></div>
+                        <div class="id-field field-compact"><small>02 · DATE OF BIRTH</small><strong id="id-dob">1998-04-18</strong></div>
+                        <div class="id-field field-compact"><small>03 · PRONOUNS</small><strong id="id-pronouns">They / Them</strong></div>
+                        <div class="id-field field-compact"><small>04 · BOROUGH</small><strong id="id-borough">Manhattan</strong></div>
+                        <div class="id-field field-compact"><small>05 · EYES / HEIGHT</small><strong><span id="id-eyes">Hazel</span> <i>·</i> <span id="id-height">5′ 9″</span></strong></div>
+                        <div class="id-field field-job"><small>06 · OCCUPATION</small><strong id="id-job">Neighborhood regular</strong></div>
+                      </div>
+                    </div>
+                    <div class="id-bottom">
+                      <div class="id-number"><small>RESIDENT NO.</small><strong id="id-number">NY 108 · 427 · 319</strong></div>
+                      <div class="id-signature"><span id="id-signature">Alex Morgan</span><small>HOLDER SIGNATURE</small></div>
+                    </div>
+                    <div class="id-footer"><span>ROLEPLAY ID · NOT A GOVERNMENT DOCUMENT</span><span>NEW YORK, NY</span></div>
+                  </div>
+                  <div class="id-face id-back">
+                    <div class="id-grain"></div>
+                    <div class="id-topline"><span>NEW YORK CITY</span><span>RESIDENT IDENTIFICATION</span><span>BACK / 02</span></div>
+                    <div class="back-title"><span class="section-kicker">CITY RESIDENT · ID SERIES 2026</span><h2>One city.<br>Infinite stories.</h2></div>
+                    <div class="borough-list"><span>01 <b>MANHATTAN</b></span><span>02 <b>BROOKLYN</b></span><span>03 <b>QUEENS</b></span><span>04 <b>THE BRONX</b></span><span>05 <b>STATEN ISLAND</b></span></div>
+                    <div class="id-microline"></div>
+                    <div class="back-bottom"><img src="/assets/nyc-mark.png" alt=""><span>PROPERTY OF NEW YORK CITY ROLEPLAY<br>RETURN TO CITY HALL IF FOUND</span><strong id="back-id">NY 108 · 427 · 319</strong></div>
+                    <div class="id-footer"><span>ROLEPLAY ID · NOT A GOVERNMENT DOCUMENT</span><span>NEW YORK, NY</span></div>
+                  </div>
+                  <button class="flip-hotspot" id="flip-card" aria-label="Flip resident card"></button>
+                  <div class="uv-overlay" aria-hidden="true"><span>NYC · AUTHENTIC</span><span>◈ ◈ ◈</span></div>
+                </div>
+              </div>
+              <div class="card-actions">
+                <button class="button button-small" id="flip-action"><span>⟳</span> Flip card</button>
+                <button class="button button-small" id="uv-action"><span>✧</span> UV light</button>
+                <button class="button button-small" id="download-card"><span>↓</span> Download PNG</button>
+                <span class="action-spacer"></span>
+                <button class="button button-small button-quiet" id="edit-profile"><span>✎</span> Edit</button>
+                <button class="button button-small button-quiet" id="reset-profile"><span>⌫</span> Reset</button>
+              </div>
+
+              <section class="content-panel vehicles-panel">
+                <div class="panel-heading">
+                  <div class="panel-title"><span class="panel-icon">▰</span><div><h2>My vehicles</h2><p>Live vehicles linked to your Roblox account</p></div><span class="count-pill" id="vehicle-count">00</span></div>
+                </div>
+                <div class="vehicle-list" id="vehicle-list"></div>
+                <div class="panel-foot"><span class="tiny-dot"></span><span class="garage-source">CONNECTING TO ER:LC</span><span class="panel-foot-spacer"></span><span id="garage-count">00 RECORDS</span></div>
+              </section>
+            </div>
+
+            <div class="side-rail right-rail">
+              <article class="side-card businesses-card">
+                <div class="side-card-top"><span class="section-kicker">AROUND THE BLOCK</span><button class="icon-button" aria-label="More businesses" data-route="businesses">↗</button></div>
+                <div class="business-visual"><div class="bodega-awning"><span>✦</span><strong>THE<br>GOOD<br>NEWS</strong><small>DELI · GROCERY</small></div><div class="bodega-window"></div><div class="bodega-caption">OPEN LATE · OPEN ALWAYS</div></div>
+                <div class="business-info"><div class="business-avatar">✳</div><div><h3>Good News Bodega</h3><p>East Village · Open now</p></div><span class="open-tag">OPEN</span></div>
+                <p class="business-note">Coffee, a chopped cheese, and a familiar face. Your corner store is waiting.</p>
+                <button class="business-link" data-route="businesses">Explore nearby <span>→</span></button>
+              </article>
+              <article class="side-card wallet-card">
+                <div class="side-card-top"><span class="section-kicker">CITY WALLET</span><span class="wallet-mini">▣</span></div>
+                <div class="wallet-amount"><small>AVAILABLE BALANCE</small><strong id="wallet-balance-side">C$ 3,325.00</strong></div>
+                <div class="wallet-meter"><span></span></div>
+                <div class="wallet-caption"><span>Resident account</span><b>ACTIVE</b></div>
+                <button class="text-link" data-route="wallet">Open wallet <span>↗</span></button>
+              </article>
+              <article class="tip-card"><span class="tip-mark">✳</span><div><span class="section-kicker">A LITTLE LOCAL TIP</span><p>There's always a seat for you on the last train home.</p></div></article>
+            </div>
+          </section>
+          </section>
+
+          <section class="route-page market-section" data-page="market" aria-labelledby="market-title">
+            <div class="market-heading">
+              <div>
+                <div class="eyebrow"><span>THE CITY EXCHANGE</span><i></i><span>NYSE WATCHLIST</span></div>
+                <h2 id="market-title">Market<span class="heading-period">.</span></h2>
+                <p class="heading-subtitle">Five New York names. Your credits. Just for the story.</p>
+              </div>
+              <div class="market-heading-actions">
+                <span class="market-status"><span class="market-status-dot"></span><span id="market-status-label">Loading quotes</span></span>
+                <button class="button button-outline" id="refresh-market"><span>⟳</span> Refresh</button>
+              </div>
+            </div>
+
+            <div class="portfolio-metrics">
+              <article class="metric-card"><span class="metric-label">BUYING POWER</span><strong id="metric-balance">C$ 3,325.00</strong><small>Available city credits</small></article>
+              <article class="metric-card"><span class="metric-label">PORTFOLIO VALUE</span><strong id="metric-value">C$ 3,325.00</strong><small>Cash + current positions</small></article>
+              <article class="metric-card"><span class="metric-label">OPEN POSITIONS</span><strong id="metric-positions">0</strong><small id="metric-gain">No unrealized change</small></article>
+              <article class="metric-card metric-rate"><span class="metric-label">USD → CAD GAME RATE</span><strong id="metric-rate">C$ 1.39</strong><small id="metric-rate-date">Bank of Canada daily rate</small></article>
+            </div>
+
+            <div class="market-layout">
+              <section class="market-board content-panel" aria-label="New York stock watchlist">
+                <div class="market-board-head">
+                  <div><span class="section-kicker">NEW YORK WATCHLIST</span><h3>Local names, listed on the NYSE</h3></div>
+                  <span class="quote-source">DELAYED QUOTES</span>
+                </div>
+                <div class="market-table-scroll">
+                  <div class="market-columns"><span>COMPANY</span><span>LAST · USD</span><span>GAME PRICE · CAD</span><span>DAY</span><span></span></div>
+                  <div id="market-list" class="market-list"><div class="market-loading"><span class="loading-pulse"></span>Fetching the latest quotes…</div></div>
+                </div>
+                <div class="market-board-foot"><span class="tiny-dot"></span><span id="quote-as-of">Quotes provided by Nasdaq. Delayed market data.</span><span class="market-foot-spacer"></span><span>TRADES USE ROLEPLAY CREDITS</span></div>
+              </section>
+
+              <aside class="market-side">
+                <section class="content-panel positions-panel">
+                  <div class="side-panel-heading"><div><span class="section-kicker">YOUR PORTFOLIO</span><h3>Open positions <span class="count-pill" id="holding-count">0</span></h3></div><span class="portfolio-mark">⌁</span></div>
+                  <div id="holdings-list" class="holdings-list"><div class="empty-market"><span>⌁</span><strong>No stocks yet</strong><small>Choose a company and make your first pretend trade.</small></div></div>
+                </section>
+                <section class="content-panel activity-panel">
+                  <div class="side-panel-heading"><div><span class="section-kicker">YOUR ACTIVITY</span><h3>Recent trades</h3></div><span class="activity-mark">↗</span></div>
+                  <div id="activity-list" class="activity-list"><div class="activity-empty">Your buys and sells will show up here.</div></div>
+                </section>
+              </aside>
+            </div>
+            <div class="paper-note"><span>✦</span><span><strong>Paper trading only.</strong> This city market uses delayed real stock quotes and a daily CAD conversion rate. Trades only move your roleplay credits; no real shares or money are involved.</span></div>
+          </section>
+
+          <section class="route-page" data-page="events">
+            <div class="page-heading"><div><div class="eyebrow"><span>WHAT'S HAPPENING</span><i></i><span>FIVE BOROUGHS</span></div><h1>City events<span class="heading-period">.</span></h1><p class="heading-subtitle">Meet the people behind your next New York story.</p></div></div>
+            <div class="directory-grid">
+              <article class="directory-card event-card"><span class="directory-icon">✦</span><span class="section-kicker">OCT 25 · FLUSHING, QUEENS</span><h2>Sunday Dumpling Crawl</h2><p>Follow the food stalls, meet the neighborhood, and bring your appetite.</p><span class="directory-tag">TODAY · 6:00 PM</span></article>
+              <article class="directory-card event-card"><span class="directory-icon">◈</span><span class="section-kicker">NOV 01 · CONEY ISLAND</span><h2>Boardwalk Meet</h2><p>Classic cars, sea air, and a sunset lap along the Brooklyn shoreline.</p><span class="directory-tag">COMMUNITY MEET</span></article>
+              <article class="directory-card event-card"><span class="directory-icon">✳</span><span class="section-kicker">NOV 08 · LOWER MANHATTAN</span><h2>Five Borough Night</h2><p>A citywide social for new faces, local crews, and good stories.</p><span class="directory-tag">ALL RESIDENTS</span></article>
+            </div>
+          </section>
+
+          <section class="route-page" data-page="licenses">
+            <div class="license-hero">
+              <div class="license-hero-copy"><div class="eyebrow"><span>CITY RECORDS</span><i></i><span>RESIDENT SERVICES</span></div><h1>Licenses<span class="heading-period">.</span></h1><p>Apply for a city license. It’s issued as soon as you meet the roleplay requirements.</p></div>
+            </div>
+            <div class="license-tracking-bar"><span class="license-tracking-dot"></span><span>ER:LC SERVER TIME</span><strong id="license-playtime-total">Checking linked account…</strong><span class="license-live-state" id="license-live-state">MONITORING</span></div>
+            <div class="license-grid" id="license-grid" aria-live="polite"><div class="license-empty-state">Loading resident licenses…</div></div>
+            <div class="paper-note license-note"><span>✦</span><span><strong>Playtime is tracked live.</strong> Your linked Roblox account must appear in the ER:LC server. Time starts accumulating when the bot monitor first sees you; time from before tracking began cannot be verified. These are roleplay credentials, not real-world licenses.</span></div>
+          </section>
+
+          <section class="route-page" data-page="wallet">
+            <div class="page-heading"><div><div class="eyebrow"><span>RESIDENT ACCOUNT</span><i></i><span>CITY CREDITS</span></div><h1>Your wallet<span class="heading-period">.</span></h1><p class="heading-subtitle">A clear view of the credits you can use around the city.</p></div></div>
+            <div class="wallet-page-grid">
+              <article class="wallet-page-card"><span class="section-kicker">AVAILABLE BALANCE</span><strong id="wallet-balance-page">C$ 3,325.00</strong><p>CAD city credits · resident account active</p><button class="button button-primary" type="button" data-route="market">Explore the market <span>→</span></button></article>
+              <section class="content-panel wallet-activity-panel"><div class="side-panel-heading"><div><span class="section-kicker">ACCOUNT ACTIVITY</span><h3>Recent trades</h3></div><span class="activity-mark">↗</span></div><div id="wallet-activity-list" class="activity-list"><div class="activity-empty">Your wallet activity will appear here.</div></div></section>
+            </div>
+            <div class="paper-note"><span>✦</span><span>City credits are only for this roleplay experience. They have no cash value and never leave your account.</span></div>
+          </section>
+
+          <section class="route-page" data-page="businesses">
+            <div class="page-heading"><div><div class="eyebrow"><span>AROUND THE BLOCK</span><i></i><span>LOCAL DIRECTORY</span></div><h1>Neighborhood businesses<span class="heading-period">.</span></h1><p class="heading-subtitle">Find a familiar counter, a new corner, or your next local favorite.</p></div></div>
+            <div class="directory-grid">
+              <article class="directory-card business-directory-card"><span class="directory-icon">✳</span><span class="section-kicker">EAST VILLAGE · DELI</span><h2>Good News Bodega</h2><p>Coffee, a chopped cheese, and a familiar face. Open late, open always.</p><span class="directory-tag open-directory-tag">OPEN NOW</span></article>
+              <article class="directory-card business-directory-card"><span class="directory-icon">☕</span><span class="section-kicker">ASTORIA · CAFÉ</span><h2>Corner Cup</h2><p>Small-batch coffee and warm pastries on the way to the train.</p><span class="directory-tag open-directory-tag">OPEN NOW</span></article>
+              <article class="directory-card business-directory-card"><span class="directory-icon">◈</span><span class="section-kicker">BED-STUY · BARBER</span><h2>Fresh Line Studio</h2><p>A neighborhood chair, a clean cut, and time to catch up.</p><span class="directory-tag">BY APPOINTMENT</span></article>
+            </div>
+          </section>
+
+          <section class="route-page" data-page="shop">
+            <div class="page-heading"><div><div class="eyebrow"><span>CITY STOREFRONT</span><i></i><span>COMING SOON</span></div><h1>The shop<span class="heading-period">.</span></h1><p class="heading-subtitle">City gear and character essentials are being put on the shelves.</p></div></div>
+            <div class="shop-feature content-panel"><div class="shop-feature-mark">NYC</div><div><span class="section-kicker">MADE FOR YOUR CITY STORY</span><h2>Something good is on its way.</h2><p>Look out for neighborhood apparel, resident card styles, and roleplay accessories.</p><span class="directory-tag">STAY TUNED</span></div></div>
+          </section>
+
+          <section class="route-page" data-page="vehicles">
+            <div class="page-heading"><div><div class="eyebrow"><span>ER:LC LIVE DATA</span><i></i><span>PERSONAL GARAGE</span></div><h1>My vehicles<span class="heading-period">.</span></h1><p class="heading-subtitle">Spawned vehicles matched to your linked Roblox account.</p></div></div>
+            <section class="content-panel vehicles-panel garage-page-panel"><div class="panel-heading"><div class="panel-title"><span class="panel-icon">▰</span><div><h2>My garage</h2><p>Current vehicles on the ER:LC server</p></div><span class="count-pill" id="vehicle-count-page">00</span></div></div><div class="vehicle-list" id="vehicle-list-page"></div><div class="panel-foot"><span class="tiny-dot"></span><span class="garage-source">CONNECTING TO ER:LC</span><span class="panel-foot-spacer"></span><span id="garage-count-page">00 RECORDS</span></div></section>
+          </section>
+
+          <section class="route-page" data-page="city-hall">
+            <div class="page-heading"><div><div class="eyebrow"><span>CITY DEPARTMENTS</span><i></i><span>RESIDENT SERVICES</span></div><h1>City Hall<span class="heading-period">.</span></h1><p class="heading-subtitle">The front door to city services and resident information.</p></div></div>
+            <div class="directory-grid"><article class="directory-card"><span class="directory-icon">✦</span><span class="section-kicker">RESIDENT SERVICES</span><h2>City records</h2><p>Keep your resident profile and character details up to date.</p><button class="text-link" type="button" data-route="profile">Open your profile <span>→</span></button></article><article class="directory-card"><span class="directory-icon">▰</span><span class="section-kicker">TRANSPORTATION</span><h2>Vehicle registry</h2><p>Manage the vehicles connected to your city identity.</p><button class="text-link" type="button" data-route="vehicles">Visit the garage <span>→</span></button></article><article class="directory-card"><span class="directory-icon">▤</span><span class="section-kicker">PERMITS</span><h2>Licenses</h2><p>Review your roleplay permits and resident credentials.</p><button class="text-link" type="button" data-route="licenses">View licenses <span>→</span></button></article></div>
+          </section>
+
+          <section class="route-page department-page" data-page="department" id="department-page"><div id="department-content"></div></section>
+
+          <section class="route-page admin-page" data-page="admin" id="admin-page">
+            <div class="admin-workspace">
+              <aside class="admin-sidebar">
+                <div class="admin-sidebar-head"><span class="section-kicker">CITY CONTROL</span><strong>Administration</strong><button class="text-link" data-route="profile">← Return to CAD</button></div>
+                <nav aria-label="Admin navigation">
+                  <button class="admin-tab active" type="button" data-admin-tab="overview"><span>◫</span>Overview</button>
+                  <button class="admin-tab" type="button" data-admin-tab="departments"><span>▥</span>Departments</button>
+                  <button class="admin-tab" type="button" data-admin-tab="people"><span>♙</span>People</button>
+                  <button class="admin-tab" type="button" data-admin-tab="settings"><span>⚙</span>Settings</button>
+                </nav>
+                <div class="admin-sidebar-foot"><span class="live-pulse"></span> SENIOR HIGH RANKING</div>
+              </aside>
+              <div class="admin-content" id="admin-content"><div class="department-loading">Loading city administration…</div></div>
+            </div>
+          </section>
+
+          <footer class="page-footer"><span>NYC ROLEPLAY PORTAL</span><span>BUILT FOR THE CITY THAT NEVER SLEEPS <i>✦</i></span><span>v1.0.33</span></footer>
+        </div>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <dialog class="modal" id="profile-modal">
+      <form method="dialog" class="modal-card" id="profile-form">
+        <div class="modal-heading"><div><span class="section-kicker">MAKE IT YOURS</span><h2>Edit your profile</h2><p>Your story starts with the details.</p></div><button class="close-modal" type="button" data-close-modal aria-label="Close">×</button></div>
+        <div class="form-grid">
+          <label class="field-wide">Full name<input name="name" maxlength="36" required placeholder="Your character name"></label>
+          <label>Date of birth<input name="dob" type="date"></label>
+          <label>Pronouns<input name="pronouns" maxlength="24" placeholder="e.g. she / her"></label>
+          <label>Borough<select name="borough"><option>Manhattan</option><option>Brooklyn</option><option>Queens</option><option>The Bronx</option><option>Staten Island</option></select></label>
+          <label>Neighborhood<input name="neighborhood" maxlength="32" placeholder="e.g. Astoria"></label>
+          <label>Occupation<input name="occupation" maxlength="32" placeholder="e.g. EMT"></label>
+          <label>Eye color<input name="eyes" maxlength="18" placeholder="e.g. Brown"></label>
+          <label>Height<input name="height" maxlength="14" placeholder="e.g. 5′ 9″"></label>
+        </div>
+        <div class="modal-note"><span>✦</span> This is a roleplay character profile. No real personal information needed.</div>
+        <div class="modal-actions"><button class="button button-outline" type="button" data-close-modal>Cancel</button><button class="button button-primary" id="save-profile" value="default">Save profile <span>→</span></button></div>
+      </form>
+    </dialog>
+
+    <dialog class="modal trade-modal" id="trade-modal">
+      <form method="dialog" class="modal-card" id="trade-form">
+        <div class="modal-heading"><div><span class="section-kicker">PAPER TRADE · NYSE</span><h2 id="trade-company-name">Buy a stock</h2><p id="trade-company-subtitle">Place a pretend order with city credits.</p></div><button class="close-modal" type="button" data-close-modal aria-label="Close">×</button></div>
+        <div class="trade-tabs" role="group" aria-label="Trade type"><button class="trade-tab active" type="button" data-side="buy">Buy</button><button class="trade-tab" type="button" data-side="sell">Sell</button></div>
+        <input id="trade-symbol" type="hidden">
+        <label class="trade-quantity-label" for="trade-quantity">Shares</label>
+        <div class="quantity-stepper"><button type="button" id="quantity-minus" aria-label="Decrease shares">−</button><input id="trade-quantity" type="number" min="1" step="1" value="1" inputmode="numeric"><button type="button" id="quantity-plus" aria-label="Increase shares">＋</button></div>
+        <div class="trade-quote-row"><span>Price per share</span><strong id="trade-price">C$ 0.00</strong></div>
+        <div class="trade-quote-row"><span>Available balance</span><strong id="trade-balance">C$ 0.00</strong></div>
+        <div class="trade-total"><span id="trade-total-label">ESTIMATED TOTAL</span><strong id="trade-total">C$ 0.00</strong></div>
+        <p class="trade-error" id="trade-error" role="status"></p>
+        <div class="modal-actions"><button class="button button-outline" type="button" data-close-modal>Cancel</button><button class="button button-primary" id="confirm-trade" value="default">Buy shares <span>→</span></button></div>
+      </form>
+    </dialog>
+
+    <dialog class="modal connect-modal" id="connect-modal">
+      <form method="dialog" class="modal-card">
+        <button class="close-modal connect-close" type="button" data-close-modal aria-label="Close">×</button>
+        <div class="connect-mark"><img src="/assets/nyc-mark.png" alt=""></div>
+        <span class="section-kicker">YOUR CITY, YOUR STORY</span>
+        <h2>Welcome to New York.</h2>
+        <p>Connect Discord to keep your character profile saved across sessions. Your server identity stays private.</p>
+        <button class="button discord-button" type="button" id="discord-login"><span class="discord-glyph">◉</span> Continue with Discord <span class="discord-arrow">↗</span></button>
+        <div class="connect-foot"><span>PRIVATE BY DEFAULT</span><i>·</i><span>ROLEPLAY ONLY</span><i>·</i><span>MADE FOR NYC</span></div>
+      </form>
+    </dialog>
+  <script src="/app.js?v=1.0.33"></script>
+  </body>
+</html>
