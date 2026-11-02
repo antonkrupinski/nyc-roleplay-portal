@@ -1,0 +1,9 @@
+.env
+.env.*
+discord-bot/
+data/
+node_modules/
+.git/
+*service-account*.json
+*-firebase-adminsdk-*.json
+serviceAccountKey.json
