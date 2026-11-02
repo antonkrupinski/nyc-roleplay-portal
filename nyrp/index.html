@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css?v=1.1.0">
+    <link rel="stylesheet" href="/styles.css?v=1.2.0">
   </head>
   <body>
     <div class="app-shell">
@@ -308,6 +308,18 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+    <dialog class="modal confirm-modal" id="confirm-modal">
+      <form method="dialog" class="modal-card confirm-card">
+        <div class="modal-heading">
+          <div><span class="section-kicker">PLEASE CONFIRM</span><h2 id="confirm-title">Are you sure?</h2><p id="confirm-message">This action may not be reversible.</p></div>
+          <button class="close-modal" type="button" data-confirm-cancel aria-label="Close">×</button>
+        </div>
+        <div class="modal-actions">
+          <button class="button button-outline" type="button" data-confirm-cancel>Cancel</button>
+          <button class="button button-primary" type="button" id="confirm-accept">Continue</button>
+        </div>
+      </form>
+    </dialog>
     <dialog class="modal" id="profile-modal">
       <form method="dialog" class="modal-card" id="profile-form">
         <div class="modal-heading"><div><span class="section-kicker">MAKE IT YOURS</span><h2>Edit your profile</h2><p>Your story starts with the details.</p></div><button class="close-modal" type="button" data-close-modal aria-label="Close">×</button></div>

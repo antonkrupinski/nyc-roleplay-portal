@@ -414,14 +414,14 @@ async function handleDepartmentAction(button) {
     await requestJson(base + "/members/" + encodeURIComponent(button.dataset.memberId) + "/shift-end", { method: "POST", body: JSON.stringify({}) });
     await refreshDepartmentPage("Department shift ended.");
   } else if (action === "remove-member") {
-    if (!confirm("Remove this person from the department roster?")) return;
+    if (!(await customConfirm("Remove this person from the department roster?", { title: "Remove person", confirmLabel: "Remove" }))) return;
     await requestJson(base + "/members/" + encodeURIComponent(button.dataset.memberId), { method: "DELETE" });
     await refreshDepartmentPage("Person removed from the department.");
   } else if (action === "review-leave") {
     await requestJson(base + "/leave/" + encodeURIComponent(button.dataset.leaveId), { method: "POST", body: JSON.stringify({ decision: button.dataset.decision }) });
     await refreshDepartmentPage(button.dataset.decision === "approved" ? "Leave request approved." : "Leave request denied.");
   } else if (action === "delete-role") {
-    if (!confirm("Delete this role? It must have no assigned members.")) return;
+    if (!(await customConfirm("Delete this role? It must have no assigned members.", { title: "Delete role", confirmLabel: "Delete" }))) return;
     await requestJson(base + "/roles/" + encodeURIComponent(button.dataset.roleId), { method: "DELETE" });
     await refreshDepartmentPage("Department role deleted.");
   }
@@ -905,6 +905,29 @@ async function submitTrade() {
   }
 }
 
+function customConfirm(message, options = {}) {
+  const dialog = $("#confirm-modal");
+  if (!dialog) return Promise.resolve(window.confirm(message));
+  $("#confirm-title").textContent = options.title || "Are you sure?";
+  $("#confirm-message").textContent = message;
+  $("#confirm-accept").textContent = options.confirmLabel || "Continue";
+  dialog.showModal();
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      dialog.close();
+      resolve(value);
+    };
+    dialog.querySelectorAll("[data-confirm-cancel]").forEach((el) => {
+      el.addEventListener("click", () => finish(false), { once: true });
+    });
+    $("#confirm-accept").addEventListener("click", () => finish(true), { once: true });
+    dialog.addEventListener("cancel", () => finish(false), { once: true });
+  });
+}
+
 function openProfileEditor() {
   const form = $("#profile-form");
   Object.entries(profile).forEach(([key, value]) => {
@@ -916,7 +939,7 @@ function openProfileEditor() {
 
 async function openConnect() {
   if (currentUser) {
-    if (confirm("Sign out of your Discord account?")) window.location.href = "/auth/logout";
+    if (await customConfirm("Sign out of your Discord account?", { title: "Sign out", confirmLabel: "Sign out" })) window.location.href = "/auth/logout";
     return;
   }
   connectModal.showModal();
@@ -1252,7 +1275,7 @@ async function initialize() {
   });
   $("#download-card").addEventListener("click", downloadCard);
   $("#reset-profile").addEventListener("click", async () => {
-    if (!confirm("Reset this profile to the sample New York resident?")) return;
+    if (!(await customConfirm("Reset this profile to the sample New York resident?", { title: "Reset profile", confirmLabel: "Reset" }))) return;
     profile = { ...defaultProfile };
     try {
       await saveProfile();
@@ -1334,7 +1357,7 @@ async function initialize() {
     const adminAction = event.target.closest?.("[data-admin-action]");
     if (adminAction?.dataset.adminAction === "delete-department") {
       event.preventDefault();
-      if (!confirm("Remove this department and its roster, shifts, and leave requests?")) return;
+      if (!(await customConfirm("Remove this department and its roster, shifts, and leave requests?", { title: "Remove department", confirmLabel: "Remove" }))) return;
       try {
         await requestJson("/api/admin/departments/" + encodeURIComponent(adminAction.dataset.departmentId), { method: "DELETE" });
         await loadDepartments();
