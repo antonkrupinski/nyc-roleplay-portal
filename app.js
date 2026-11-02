@@ -24,7 +24,9 @@ const pageInfo = {
   market: { title: "Market", section: "City exchange" },
   shop: { title: "Shop", section: "City storefront" },
   vehicles: { title: "Vehicles", section: "Civilian" },
-  "city-hall": { title: "City Hall", section: "City departments" }
+  "city-hall": { title: "City Hall", section: "City departments" },
+  leo: { title: "Police MDT", section: "Law enforcement" },
+  bolos: { title: "BOLOs", section: "Law enforcement" }
 };
 
 const profileKey = "nycrp.profile.v1";
@@ -252,6 +254,7 @@ function renderDepartmentPage() {
   const roleLabel = membership?.roleName || "Not on roster";
   const pendingLeaves = leaveRequests.filter((leave) => leave.status === "pending");
   const activeMembers = department.members.filter((member) => member.activeShift);
+  updateLeoAccess();
   const tabs = [
     departmentTabButton("overview", "Overview", "◫"),
     departmentTabButton("shift", "Shift management", "◷"),
@@ -552,7 +555,14 @@ function createVehicleRow(vehicle) {
     model.textContent = [vehicle.model, color, texture].filter(Boolean).join(" · ");
     const status = document.createElement("span");
     status.className = "vehicle-status " + vehicle.status.toLowerCase();
-    status.textContent = vehicle.status;
+    status.textContent = vehicle.status || "Valid";
+    if (vehicle.source === "erlc") {
+      status.classList.add("vehicle-status-control");
+      status.tabIndex = 0;
+      status.setAttribute("role", "button");
+      status.title = "Change registry status: Valid → Stolen → Expired";
+      status.dataset.vehicleStatus = String(vehicle.plate || vehicle.id);
+    }
     model.title = [vehicle.model, vehicle.color, vehicle.colorHex, texture, vehicle.owner ? "Owner: " + vehicle.owner : ""].filter(Boolean).join(" · ");
     row.append(icon, plate, model, status);
     return row;
@@ -592,7 +602,8 @@ async function refreshLiveVehicles() {
   if (!currentUser) return;
   try {
     const data = await requestJson("/api/erlc/vehicles");
-    vehicles = Array.isArray(data.vehicles) ? data.vehicles : [];
+    const savedStatuses = JSON.parse(localStorage.getItem("nycrp.vehicle-statuses.v1") || "{}");
+    vehicles = (Array.isArray(data.vehicles) ? data.vehicles : []).map((vehicle) => ({ ...vehicle, status: savedStatuses[String(vehicle.plate || vehicle.id)] || "Valid" }));
     vehicleRobloxUsername = data.robloxUsername || currentUser.robloxUsername || "";
     vehicleSyncStatus = "ready";
   } catch {
@@ -1108,6 +1119,47 @@ function roundedRect(ctx, x, y, width, height, radius) {
   ctx.roundRect(x, y, width, height, radius);
 }
 
+const leoRecordsKey = "nycrp.leo-records.v1";
+const boloKey = "nycrp.bolos.v1";
+function readStore(key) { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; } }
+function writeStore(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+function isPoliceDepartment(name="") { return /NYPD|NYSP|COAST\s*GUARD|NYPP/i.test(name); }
+function updateLeoAccess() {
+  const section = $("#leo-nav-section"); if (!section) return;
+  const onDuty = Boolean(activeDepartment?.membership?.activeShift && isPoliceDepartment(activeDepartment.department?.name));
+  section.hidden = !onDuty;
+  if (!onDuty && ["leo", "bolos"].includes(document.body.dataset.page)) activatePage("profile", true);
+}
+function renderBolos() {
+  const root = $("#bolo-list"); if (!root) return;
+  const items = readStore(boloKey);
+  root.innerHTML = items.length ? items.map((b,i)=>`<article class="leo-result"><div><strong>${escapeHtml(b.kind === "vehicle" ? "VEHICLE BOLO" : "PERSON BOLO")}</strong><p>${escapeHtml(b.summary)}</p><small>${escapeHtml(b.createdAt)}</small></div><span class="leave-status pending">ACTIVE</span></article>`).join("") : '<div class="department-empty">No active BOLOs.</div>';
+}
+function openLeoModal(html) { const d=$("#leo-modal"); $("#leo-modal-content").innerHTML=html; d.showModal(); }
+function searchLeo(type, query) {
+  const q=query.trim().toLowerCase(); const liveVehicles=vehicles || [];
+  const vehicleMatches=liveVehicles.filter(v => type==="plate" && String(v.plate||"").toLowerCase().includes(q));
+  const records=readStore(leoRecordsKey);
+  const people=records.filter(r => type!=="plate" && String(type==="roblox"?r.robloxUsername:r.cadName||"").toLowerCase().includes(q));
+  const root=$("#leo-results");
+  const rows=[...vehicleMatches.map(v=>({kind:"vehicle",value:v})),...people.map(v=>({kind:"person",value:v}))];
+  root.innerHTML=rows.length?rows.map((r,i)=>`<button class="leo-result leo-result-button" data-leo-open="${i}"><span><strong>${escapeHtml(r.kind==="vehicle"?`${r.value.plate||"NO PLATE"} · ${r.value.model||"Vehicle"}`:`${r.value.cadName||r.value.robloxUsername}`)}</strong><small>${r.kind==="vehicle"?"VEHICLE REGISTRATION": "PERSON RECORD"}</small></span><span>View record →</span></button>`).join(""):'<div class="department-empty">No matching records found. Person records appear after an officer adds a citation, arrest, warrant, or note.</div>';
+  root._leoRows=rows;
+}
+function createLeoPaperwork(person, kind) {
+  openLeoModal(`<div class="paperwork"><div class="paperwork-head"><small>NEW YORK ROLEPLAY · LAW ENFORCEMENT</small><h2>${kind.toUpperCase()} REPORT</h2><p>OFFICIAL INCIDENT / RECORD DOCUMENT</p></div><form id="leo-paper-form"><label>CAD Name<input name="cadName" required value="${escapeHtml(person.cadName||"")}"></label><label>Roblox Username<input name="robloxUsername" value="${escapeHtml(person.robloxUsername||"")}"></label><label>Incident / case number<input name="caseNumber" placeholder="Automatically assigned if blank"></label><label>Details<textarea name="details" rows="5" required placeholder="Enter facts, circumstances, and relevant details..."></textarea></label><label>Officer<input name="officer" value="${escapeHtml(currentUser?.username||"Officer")}"></label><div class="paperwork-actions"><button type="button" class="button button-quiet" data-close-modal>Cancel</button><button class="button button-primary">File ${kind}</button></div></form></div>`);
+  $("#leo-paper-form").addEventListener("submit",e=>{e.preventDefault();const f=new FormData(e.currentTarget);const list=readStore(leoRecordsKey);const rec={...person,id:person.id||crypto.randomUUID(),cadName:f.get("cadName"),robloxUsername:f.get("robloxUsername"),documents:person.documents||[]};rec.documents.push({type:kind,caseNumber:f.get("caseNumber")||`NY-${Date.now()}`,details:f.get("details"),officer:f.get("officer"),createdAt:new Date().toLocaleString()});const i=list.findIndex(x=>x.id===rec.id);if(i>=0)list[i]=rec;else list.push(rec);writeStore(leoRecordsKey,list);$("#leo-modal").close();showToast(`${kind} saved to the person record.`);searchLeo("roblox",rec.robloxUsername||rec.cadName);});
+}
+function showLeoResult(row) {
+  if(row.kind==="vehicle") { const v=row.value;const status=v.status||"Valid";openLeoModal(`<div class="paperwork"><div class="paperwork-head"><small>NEW YORK ROLEPLAY · VEHICLE REGISTRY</small><h2>VEHICLE RECORD</h2><p>${escapeHtml(v.plate||"NO PLATE")}</p></div><dl class="record-details"><dt>Vehicle</dt><dd>${escapeHtml(v.model||"Unknown")}</dd><dt>Color</dt><dd>${escapeHtml(v.color||"Unknown")}</dd><dt>Owner</dt><dd>${escapeHtml(v.owner||vehicleRobloxUsername||"Not available")}</dd><dt>Registration status</dt><dd><b class="leave-status ${status.toLowerCase()}">${escapeHtml(status)}</b></dd></dl><p class="small-muted">Status is controlled by the vehicle owner / registry record.</p><button class="button button-quiet" data-close-modal>Close</button></div>`);return; }
+  const person=row.value;const docs=person.documents||[];openLeoModal(`<div class="paperwork"><div class="paperwork-head"><small>NEW YORK ROLEPLAY · PERSONNEL RECORD</small><h2>PERSON RECORD</h2><p>${escapeHtml(person.cadName||person.robloxUsername)}</p></div><dl class="record-details"><dt>CAD Name</dt><dd>${escapeHtml(person.cadName||"—")}</dd><dt>Roblox Username</dt><dd>${escapeHtml(person.robloxUsername||"—")}</dd></dl><h3>Filed documents</h3>${docs.length?docs.map(d=>`<article class="paper-document"><strong>${escapeHtml(d.type)} · ${escapeHtml(d.caseNumber)}</strong><p>${escapeHtml(d.details)}</p><small>${escapeHtml(d.officer)} · ${escapeHtml(d.createdAt)}</small></article>`).join(""):'<p>No documents on file.</p>'}<div class="paperwork-actions">${["Citation","Arrest","Warrant","Note"].map(k=>`<button class="button button-primary" data-leo-paper="${k}">${k}</button>`).join("")}</div><button class="button button-quiet" data-close-modal>Close</button></div>`);$("#leo-modal-content").querySelectorAll("[data-leo-paper]").forEach(b=>b.addEventListener("click",()=>createLeoPaperwork(person,b.dataset.leoPaper)));
+}
+function openBoloForm(kind) {
+ const vehicle=kind==="vehicle";
+ openLeoModal(`<div class="paperwork"><div class="paperwork-head"><small>NEW YORK ROLEPLAY · FIELD ALERT</small><h2>${vehicle?"VEHICLE":"PERSON"} BOLO</h2><p>BE ON THE LOOKOUT · OFFICIAL ALERT</p></div><form id="bolo-form">${vehicle?'<label>License plate (optional)<input name="plate"></label><label>Vehicle color<input name="color" required></label><label>Make / model<input name="make" required></label>':'<label>CAD Name (optional)<input name="cadName"></label>'}<label>Description<textarea name="description" rows="5" required></textarea></label><label>Issuing officer<input name="officer" value="${escapeHtml(currentUser?.username||"Officer")}"></label><div class="paperwork-actions"><button type="button" class="button button-quiet" data-close-modal>Cancel</button><button class="button button-primary">Publish BOLO</button></div></form></div>`);
+ $("#bolo-form").addEventListener("submit",e=>{e.preventDefault();const f=new FormData(e.currentTarget);const data=Object.fromEntries(f.entries());const summary=vehicle?[data.plate&&`Plate ${data.plate}`,data.color,data.make,data.description].filter(Boolean).join(" · "):[data.cadName,data.description].filter(Boolean).join(" · ");const list=readStore(boloKey);list.unshift({kind,summary,createdAt:new Date().toLocaleString(),officer:data.officer});writeStore(boloKey,list);$("#leo-modal").close();renderBolos();showToast("BOLO published.");});
+}
+
 async function initialize() {
   loadGuestData();
   const params = new URLSearchParams(window.location.search);
@@ -1315,6 +1367,11 @@ async function initialize() {
       await loadDepartmentPage(activeDepartment.department.id);
     }
   });
+  document.addEventListener("click", e=>{const b=e.target.closest("[data-vehicle-status]");if(!b)return;const key=b.dataset.vehicleStatus;const current=vehicles.find(v=>String(v.plate||v.id)===key);if(!current)return;const next=current.status==="Valid"?"Stolen":current.status==="Stolen"?"Expired":"Expired";const statuses=JSON.parse(localStorage.getItem("nycrp.vehicle-statuses.v1")||"{}");statuses[key]=next;localStorage.setItem("nycrp.vehicle-statuses.v1",JSON.stringify(statuses));current.status=next;renderVehicles();showToast(`Vehicle status updated to ${next}.`);});
+    $("#leo-search-form")?.addEventListener("submit", e=>{e.preventDefault();const f=new FormData(e.currentTarget);searchLeo(f.get("type"),f.get("query"));});
+  $("#leo-results")?.addEventListener("click",e=>{const b=e.target.closest("[data-leo-open]");if(b){const rows=e.currentTarget._leoRows||[];showLeoResult(rows[Number(b.dataset.leoOpen)]);}});
+  document.addEventListener("click",e=>{const b=e.target.closest("[data-leo-action]");if(b)openBoloForm(b.dataset.leoAction==="vehicle-bolo"?"vehicle":"person");});
+  renderBolos();
   window.addEventListener("popstate", () => activatePage(currentPageFromHash()));
   window.addEventListener("hashchange", () => activatePage(currentPageFromHash()));
   activatePage(currentPageFromHash());

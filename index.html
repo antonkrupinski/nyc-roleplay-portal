@@ -34,6 +34,14 @@
           </nav>
         </div>
 
+        <div class="nav-section" id="leo-nav-section" hidden>
+          <span class="nav-label">LEO</span>
+          <nav aria-label="Law enforcement tools">
+            <a class="nav-link" href="#leo" data-route="leo"><span class="nav-icon">▣</span>MDT</a>
+            <a class="nav-link" href="#bolos" data-route="bolos"><span class="nav-icon">⚑</span>BOLOs</a>
+          </nav>
+        </div>
+
         <div class="nav-section departments">
           <span class="nav-label">CITY DEPARTMENTS</span>
           <nav aria-label="City departments" id="department-nav">
@@ -272,6 +280,9 @@
             <div class="directory-grid"><article class="directory-card"><span class="directory-icon">✦</span><span class="section-kicker">RESIDENT SERVICES</span><h2>City records</h2><p>Keep your resident profile and character details up to date.</p><button class="text-link" type="button" data-route="profile">Open your profile <span>→</span></button></article><article class="directory-card"><span class="directory-icon">▰</span><span class="section-kicker">TRANSPORTATION</span><h2>Vehicle registry</h2><p>Manage the vehicles connected to your city identity.</p><button class="text-link" type="button" data-route="vehicles">Visit the garage <span>→</span></button></article><article class="directory-card"><span class="directory-icon">▤</span><span class="section-kicker">PERMITS</span><h2>Licenses</h2><p>Review your roleplay permits and resident credentials.</p><button class="text-link" type="button" data-route="licenses">View licenses <span>→</span></button></article></div>
           </section>
 
+          <section class="route-page" data-page="leo"><div class="page-heading"><div><div class="eyebrow"><span>LAW ENFORCEMENT</span><i></i><span>MOBILE DATA TERMINAL</span></div><h1>Police MDT<span class="heading-period">.</span></h1><p class="heading-subtitle">Search vehicle registrations and resident records.</p></div></div><section class="content-panel leo-panel"><div class="panel-heading"><div class="panel-title"><span class="panel-icon">▣</span><div><h2>Records lookup</h2><p>Search by license plate, Roblox username, or CAD name.</p></div></div></div><form id="leo-search-form" class="leo-search"><select name="type"><option value="plate">License plate</option><option value="roblox">Roblox username</option><option value="cad">CAD name</option></select><input name="query" required placeholder="Enter search details"><button class="button button-primary">Search records →</button></form><div id="leo-results" class="leo-results"><div class="department-empty">Enter a search above to query available CAD records.</div></div></section></section>
+          <section class="route-page" data-page="bolos"><div class="page-heading"><div><div class="eyebrow"><span>LAW ENFORCEMENT</span><i></i><span>BE ON THE LOOKOUT</span></div><h1>BOLOs<span class="heading-period">.</span></h1><p class="heading-subtitle">Create and review vehicle and person alerts.</p></div></div><div class="leo-action-row"><button class="button button-primary" data-leo-action="vehicle-bolo">＋ Vehicle BOLO</button><button class="button button-outline" data-leo-action="person-bolo">＋ Person BOLO</button></div><section class="content-panel"><div id="bolo-list" class="leo-results"></div></section></section>
+          <dialog id="leo-modal" class="leo-modal"><div id="leo-modal-content"></div></dialog>
           <section class="route-page department-page" data-page="department" id="department-page"><div id="department-content"></div></section>
 
           <section class="route-page admin-page" data-page="admin" id="admin-page">
