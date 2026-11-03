@@ -1084,6 +1084,41 @@ input, select, textarea { background: #0d0d10; border-color: #303036; color: #f4
   .moderation-toolbox { margin-top: 0; }
 }
 
+.route-page[data-page="vehicles"] .page-heading,
+.route-page[data-page="shop"] .page-heading,
+.route-page[data-page="businesses"] .page-heading,
+.route-page[data-page="wallet"] .page-heading,
+.route-page[data-page="events"] .page-heading {
+  min-height: 170px;
+  padding: 25px 24px;
+  border-color: rgba(255,255,255,.12);
+  color: #f3f5f6;
+  background-position: center 48%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  box-shadow: 0 16px 34px rgba(0,0,0,.24);
+}
+.route-page[data-page="vehicles"] .page-heading {
+  background-image: linear-gradient(90deg,rgba(5,8,11,.82),rgba(5,8,11,.34) 58%,rgba(5,8,11,.18)),url("/assets/license-motor.webp");
+}
+.route-page[data-page="shop"] .page-heading {
+  background-image: linear-gradient(90deg,rgba(5,8,11,.82),rgba(5,8,11,.34) 58%,rgba(5,8,11,.18)),url("/assets/license-fishing.webp");
+}
+.route-page[data-page="businesses"] .page-heading {
+  background-image: linear-gradient(90deg,rgba(5,8,11,.82),rgba(5,8,11,.34) 58%,rgba(5,8,11,.18)),url("/assets/license-firearms-hunting.webp");
+}
+.route-page[data-page="wallet"] .page-heading {
+  background-image: linear-gradient(90deg,rgba(5,8,11,.82),rgba(5,8,11,.34) 58%,rgba(5,8,11,.18)),url("/assets/license-boating.webp");
+}
+.route-page[data-page="events"] .page-heading {
+  background-image: linear-gradient(90deg,rgba(5,8,11,.82),rgba(5,8,11,.34) 58%,rgba(5,8,11,.18)),url("/assets/license-commercial.webp");
+}
+.route-page[data-page="vehicles"] .page-heading h1,
+.route-page[data-page="shop"] .page-heading h1,
+.route-page[data-page="businesses"] .page-heading h1,
+.route-page[data-page="wallet"] .page-heading h1,
+.route-page[data-page="events"] .page-heading h1 { color: #f3f5f6; }
+
 /* ChatGPT-inspired visual system */
 :root {
   --bg: #212121; --surface: #2f2f2f; --surface-2: #262626;
