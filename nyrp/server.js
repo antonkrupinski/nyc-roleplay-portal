@@ -14,6 +14,7 @@ const {
   getErlcPlaytimeMonitor,
   getApplicationForms,
   getPublicApplicationForm,
+  getPendingApplicationSubmission,
   updateApplicationForm,
   getModerationLogs,
   getModerationShift,
@@ -1391,7 +1392,8 @@ async function handleRequest(request, response) {
             title: form.title,
             description: form.description,
             questions: form.questions
-          }
+          },
+          hasPendingSubmission: Boolean(await getPendingApplicationSubmission(form.id, user.id))
         });
       }
       if (request.method === "POST") {

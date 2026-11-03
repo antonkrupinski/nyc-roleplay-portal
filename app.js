@@ -250,9 +250,14 @@ async function loadPublicApplication() {
   const formElement = $("#public-application-form");
   const questions = $("#public-application-questions");
   const message = $("#public-application-message");
+  const content = $("#public-application-content");
+  const submitted = $("#public-application-submitted");
   const publicId = applicationPublicIdFromPath();
-  if (!formElement || !questions || !message || !publicId) return;
+  if (!formElement || !questions || !message || !content || !submitted || !publicId) return;
   formElement.dataset.loaded = "";
+  formElement.dataset.submitted = "";
+  content.hidden = false;
+  submitted.hidden = true;
   questions.innerHTML = "";
   $("#public-application-submit").disabled = true;
   message.textContent = "Loading application…";
@@ -262,6 +267,10 @@ async function loadPublicApplication() {
     const form = data.form;
     setText("#public-application-title", form.title);
     setText("#public-application-description", form.description || "Complete each required question and submit your application.");
+    if (data.hasPendingSubmission) {
+      showApplicationSubmitted();
+      return;
+    }
     questions.innerHTML = (form.questions || []).map((question, index) => {
       const id = "application-answer-" + question.id;
       const questionId = escapeHtml(question.id);
@@ -296,6 +305,15 @@ async function loadPublicApplication() {
     message.textContent = error.message;
     message.classList.add("is-error");
   }
+}
+
+function showApplicationSubmitted() {
+  const formElement = $("#public-application-form");
+  if (!formElement) return;
+  formElement.dataset.submitted = "true";
+  formElement.dataset.loaded = "";
+  $("#public-application-content").hidden = true;
+  $("#public-application-submitted").hidden = false;
 }
 
 function formatCad(value) {
@@ -1799,6 +1817,7 @@ async function initialize() {
   $("#public-application-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const formElement = event.currentTarget;
+    if (formElement.dataset.submitted === "true") return;
     formElement.querySelectorAll("[data-checkbox-group]").forEach((group) => {
       const inputs = Array.from(group.querySelectorAll('input[type="checkbox"]'));
       const selected = inputs.some((input) => input.checked);
@@ -1834,9 +1853,12 @@ async function initialize() {
         method: "POST",
         body: JSON.stringify({ answers })
       });
-      message.textContent = "Application submitted. The reviewing team will contact you by Discord DM.";
-      formElement.querySelectorAll("input, textarea, select, button").forEach((input) => { input.disabled = true; });
+      showApplicationSubmitted();
     } catch (error) {
+      if (error.message === "You have already submitted this application.") {
+        showApplicationSubmitted();
+        return;
+      }
       message.textContent = error.message;
       message.classList.add("is-error");
       submitButton.disabled = false;

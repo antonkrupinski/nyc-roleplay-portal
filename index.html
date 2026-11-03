@@ -326,10 +326,19 @@
           <section class="route-page applications-page" data-page="apply" id="public-application-page">
             <div class="page-heading"><div><div class="eyebrow"><span>RESIDENT SERVICES</span><i></i><span>APPLICATION</span></div><h1 id="public-application-title">Application<span class="heading-period">.</span></h1><p class="heading-subtitle" id="public-application-description">Complete each required question and submit your application.</p></div></div>
             <form class="content-panel public-application-form" id="public-application-form">
-              <div class="public-application-intro"><span class="public-application-intro-icon">✓</span><div><strong>Verified application</strong><p>Your verified Discord and Roblox accounts are included with your submission.</p></div></div>
-              <div class="application-builder-message" id="public-application-message" role="status">Loading application…</div>
-              <div id="public-application-questions"></div>
-              <div class="public-application-footer"><span>Your answers are sent securely to the review team.</span><button class="button button-primary" id="public-application-submit" type="submit" disabled>Submit application <span>→</span></button></div>
+              <div class="public-application-content" id="public-application-content">
+                <div class="public-application-intro"><span class="public-application-intro-icon">✓</span><div><strong>Verified application</strong><p>Your verified Discord and Roblox accounts are included with your submission.</p></div></div>
+                <div class="application-builder-message" id="public-application-message" role="status">Loading application…</div>
+                <div id="public-application-questions"></div>
+                <div class="public-application-footer"><span>Your answers are sent securely to the review team.</span><button class="button button-primary" id="public-application-submit" type="submit" disabled>Submit application <span>→</span></button></div>
+              </div>
+              <section class="application-submitted" id="public-application-submitted" role="status" aria-live="polite" hidden>
+                <div class="application-submitted-check" aria-hidden="true">
+                  <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="28"></circle><path d="m18 33 9 9 19-20"></path></svg>
+                </div>
+                <h2>Application Submitted</h2>
+                <p>Your application is with the review team. You can apply again after it has been reviewed.</p>
+              </section>
             </form>
           </section>
 

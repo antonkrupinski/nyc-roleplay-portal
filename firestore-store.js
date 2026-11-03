@@ -371,12 +371,24 @@ async function getPublicApplicationForm(publicId) {
 
 async function createApplicationSubmission(form, applicant, answers) {
   const db = getFirestore();
-  const id = form.id + "_" + applicant.discordId;
-  const ref = db.collection("applicationSubmissions").doc(id);
+  const submissions = db.collection("applicationSubmissions");
+  const lockRef = db.collection("applicationSubmissionLocks").doc(form.id + "_" + applicant.discordId);
+  const legacyRef = submissions.doc(form.id + "_" + applicant.discordId);
   return db.runTransaction(async (transaction) => {
-    const [formSnapshot, submissionSnapshot] = await Promise.all([transaction.get(db.collection("applicationForms").doc(form.id)), transaction.get(ref)]);
+    const [formSnapshot, lockSnapshot, legacySnapshot] = await Promise.all([
+      transaction.get(db.collection("applicationForms").doc(form.id)),
+      transaction.get(lockRef),
+      transaction.get(legacyRef)
+    ]);
     if (!formSnapshot.exists || formSnapshot.get("publicId") !== form.publicId || formSnapshot.get("isActive") === false) return { error: "application_unavailable" };
-    if (submissionSnapshot.exists) return { error: "already_applied" };
+    if (lockSnapshot.exists && lockSnapshot.get("submissionId")) {
+      const activeId = String(lockSnapshot.get("submissionId"));
+      const activeSnapshot = activeId === legacyRef.id ? legacySnapshot : await transaction.get(submissions.doc(activeId));
+      if (activeSnapshot.exists && activeSnapshot.get("status") === "pending") return { error: "already_applied" };
+    }
+    if (legacySnapshot.exists && legacySnapshot.get("status") === "pending") return { error: "already_applied" };
+    const id = crypto.randomUUID();
+    const ref = submissions.doc(id);
     const submission = {
       formId: form.id,
       formTitle: form.title,
@@ -388,8 +400,29 @@ async function createApplicationSubmission(form, applicant, answers) {
       createdAt: new Date().toISOString()
     };
     transaction.create(ref, submission);
+    transaction.set(lockRef, { submissionId: id, formId: form.id, discordId: String(applicant.discordId) });
     return { id, ...submission };
   });
+}
+
+async function getPendingApplicationSubmission(formId, discordId) {
+  const db = getFirestore();
+  const submissions = db.collection("applicationSubmissions");
+  const legacyRef = submissions.doc(String(formId) + "_" + String(discordId));
+  const lockRef = db.collection("applicationSubmissionLocks").doc(String(formId) + "_" + String(discordId));
+  const lockSnapshot = await lockRef.get();
+  if (lockSnapshot.exists && lockSnapshot.get("submissionId")) {
+    const activeId = String(lockSnapshot.get("submissionId"));
+    const activeRef = activeId === legacyRef.id ? legacyRef : submissions.doc(activeId);
+    const activeSnapshot = await activeRef.get();
+    if (activeSnapshot.exists && activeSnapshot.get("status") === "pending") {
+      return { id: activeSnapshot.id, ...activeSnapshot.data() };
+    }
+  }
+  const legacySnapshot = await legacyRef.get();
+  return legacySnapshot.exists && legacySnapshot.get("status") === "pending"
+    ? { id: legacySnapshot.id, ...legacySnapshot.data() }
+    : null;
 }
 
 async function getApplicationSubmission(id) {
@@ -438,11 +471,14 @@ async function completeApplicationNotification(id, outcome) {
 }
 
 async function reviewApplicationSubmission(id, outcome) {
-  const ref = getFirestore().collection("applicationSubmissions").doc(String(id));
-  return getFirestore().runTransaction(async (transaction) => {
+  const db = getFirestore();
+  const ref = db.collection("applicationSubmissions").doc(String(id));
+  return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists || snapshot.get("status") !== "pending") return null;
     const submission = snapshot.data();
+    const lockRef = db.collection("applicationSubmissionLocks").doc(`${submission.formId}_${submission.applicant.discordId}`);
+    const lockSnapshot = await transaction.get(lockRef);
     const reviewed = {
       status: outcome.status,
       reviewReason: String(outcome.reason),
@@ -450,6 +486,7 @@ async function reviewApplicationSubmission(id, outcome) {
       reviewedAt: new Date().toISOString()
     };
     transaction.update(ref, reviewed);
+    if (lockSnapshot.exists && lockSnapshot.get("submissionId") === snapshot.id) transaction.delete(lockRef);
     return { id: snapshot.id, ...submission, ...reviewed };
   });
 }
@@ -465,6 +502,7 @@ module.exports = {
   getApplicationForms,
   updateApplicationForm,
   getApplicationSubmission,
+  getPendingApplicationSubmission,
   getFirestore,
   getPublicApplicationForm,
   getModerationLogs,
