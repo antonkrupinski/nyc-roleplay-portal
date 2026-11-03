@@ -27,7 +27,9 @@ const pageInfo = {
   "city-hall": { title: "City Hall", section: "City departments" },
   leo: { title: "Police MDT", section: "Law enforcement" },
   bolos: { title: "BOLOs", section: "Law enforcement" },
-  moderation: { title: "Moderation", section: "Staff tools" }
+  moderation: { title: "Moderation", section: "Staff tools" },
+  applications: { title: "Applications", section: "Staff tools" },
+  apply: { title: "Application", section: "Resident services" }
 };
 
 const profileKey = "nycrp.profile.v1";
@@ -79,7 +81,10 @@ function showToast(message) {
 }
 
 function activatePage(requestedPage, updateHistory = false) {
-  const allowedPage = requestedPage === "moderation" && !currentUser?.moderationAccess ? "profile" : requestedPage;
+  const allowedPage = requestedPage === "moderation" && !currentUser?.moderationAccess ||
+    requestedPage === "applications" && !currentUser?.applicationManagerAccess
+    ? "profile"
+    : requestedPage;
   const page = Object.hasOwn(pageInfo, allowedPage) || Object.hasOwn(departmentPageInfo, allowedPage) ? allowedPage : "profile";
   const info = pageInfo[page] || departmentPageInfo[page];
   const pageType = page.startsWith("department-") ? "department" : page;
@@ -105,10 +110,70 @@ function activatePage(requestedPage, updateHistory = false) {
   if (page.startsWith("department-")) loadDepartmentPage(page.slice("department-".length));
   if (page === "admin") loadAdminData();
   if (page === "licenses" && currentUser) void loadLicenses();
+  if (page === "applications" && currentUser?.applicationManagerAccess) void loadApplicationForms();
+  if (page === "apply" && currentUser) void loadPublicApplication();
 }
 
 function currentPageFromHash() {
-  return window.location.hash.slice(1) || "profile";
+  if (window.location.hash) return window.location.hash.slice(1);
+  if (window.location.pathname === "/applications") return "applications";
+  if (/^\/apply\/[A-Za-z0-9_-]{32}$/.test(window.location.pathname)) return "apply";
+  return "profile";
+}
+
+function applicationPublicIdFromPath() {
+  const match = window.location.pathname.match(/^\/apply\/([A-Za-z0-9_-]{32})$/);
+  return match ? match[1] : "";
+}
+
+async function loadApplicationForms() {
+  const list = $("#application-forms-list");
+  if (!list) return;
+  try {
+    const data = await requestJson("/api/applications/manage/forms");
+    const forms = Array.isArray(data.forms) ? data.forms : [];
+    list.innerHTML = forms.length
+      ? forms.map((form) => {
+        const url = new URL("/apply/" + encodeURIComponent(form.publicId), window.location.origin).toString();
+        return `<article class="application-form-item"><strong>${escapeHtml(form.title)}</strong><small>${(form.questions || []).length} questions · ${new Date(form.createdAt).toLocaleDateString()}</small><a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(url)}</a><div class="application-form-actions"><button class="button button-outline" type="button" data-copy-application="${escapeHtml(url)}">Copy link</button></div></article>`;
+      }).join("")
+      : '<div class="department-empty">No published applications yet.</div>';
+  } catch (error) {
+    list.innerHTML = `<div class="department-empty">${escapeHtml(error.message)}</div>`;
+  }
+}
+
+async function loadPublicApplication() {
+  const formElement = $("#public-application-form");
+  const questions = $("#public-application-questions");
+  const message = $("#public-application-message");
+  const publicId = applicationPublicIdFromPath();
+  if (!formElement || !questions || !message || !publicId) return;
+  formElement.dataset.loaded = "";
+  questions.innerHTML = "";
+  $("#public-application-submit").disabled = true;
+  message.textContent = "Loading application…";
+  message.classList.remove("is-error");
+  try {
+    const data = await requestJson("/api/applications/forms/" + encodeURIComponent(publicId));
+    const form = data.form;
+    setText("#public-application-title", form.title);
+    setText("#public-application-description", form.description || "Complete each required question and submit your application.");
+    questions.innerHTML = (form.questions || []).map((question) => {
+      const id = "application-answer-" + question.id;
+      const requiredLabel = question.required ? '<span aria-hidden="true"> *</span>' : '<span> (optional)</span>';
+      const input = question.type === "long"
+        ? `<textarea id="${escapeHtml(id)}" name="${escapeHtml(question.id)}" maxlength="900" ${question.required ? "required" : ""}></textarea>`
+        : `<input id="${escapeHtml(id)}" name="${escapeHtml(question.id)}" maxlength="250" ${question.required ? "required" : ""}>`;
+      return `<div class="public-application-question"><label for="${escapeHtml(id)}">${escapeHtml(question.text)}${requiredLabel}</label>${input}</div>`;
+    }).join("");
+    formElement.dataset.loaded = "true";
+    message.textContent = "Your verified Discord and Roblox accounts will be included with your submission.";
+    $("#public-application-submit").disabled = false;
+  } catch (error) {
+    message.textContent = error.message;
+    message.classList.add("is-error");
+  }
 }
 
 function formatCad(value) {
@@ -1500,6 +1565,90 @@ async function initialize() {
   if (currentUser) await loadDepartments();
   bindModerationAutocomplete("#moderation-user-search", "#moderation-user-suggestions");
   bindModerationAutocomplete("#moderation-logs-search", "#moderation-log-suggestions");
+  $("#application-add-question").addEventListener("click", () => {
+    const list = $("#application-question-list");
+    if (list.children.length >= 20) return showToast("An application can have at most 20 questions.");
+    const row = document.createElement("div");
+    row.className = "application-question-row";
+    row.dataset.applicationQuestion = "";
+    row.innerHTML = '<label class="application-field">Question<input data-question-text maxlength="160" required placeholder="Enter a question"></label><label class="application-field">Answer type<select data-question-type><option value="short">Short answer</option><option value="long">Long answer</option></select></label><label class="application-required"><input data-question-required type="checkbox" checked> Required</label><button class="button button-quiet application-remove-question" type="button" data-remove-question aria-label="Remove question">×</button>';
+    list.append(row);
+  });
+  $("#application-question-list").addEventListener("click", (event) => {
+    if (!event.target.closest("[data-remove-question]")) return;
+    if ($("#application-question-list").children.length <= 1) return showToast("Keep at least one question in the application.");
+    event.target.closest("[data-application-question]").remove();
+  });
+  $("#application-publish").addEventListener("click", async () => {
+    const formElement = $("#application-builder-form");
+    if (!formElement.reportValidity()) return;
+    const button = $("#application-publish");
+    const message = $("#application-builder-message");
+    button.disabled = true;
+    message.textContent = "";
+    message.classList.remove("is-error");
+    const questions = Array.from($("#application-question-list").querySelectorAll("[data-application-question]"), (row) => ({
+      text: row.querySelector("[data-question-text]").value,
+      type: row.querySelector("[data-question-type]").value,
+      required: row.querySelector("[data-question-required]").checked
+    }));
+    try {
+      const result = await requestJson("/api/applications/manage/forms", {
+        method: "POST",
+        body: JSON.stringify({
+          title: $("#application-title").value,
+          description: $("#application-description").value,
+          questions
+        })
+      });
+      const link = $("#application-published-link");
+      link.hidden = false;
+      link.innerHTML = `<strong>Application published — share this link</strong><a href="${escapeHtml(result.url)}" target="_blank" rel="noreferrer">${escapeHtml(result.url)}</a><button class="button button-outline" type="button" data-copy-application="${escapeHtml(result.url)}">Copy link</button>`;
+      message.textContent = "Published. Applicants must sign in and verify Discord and Roblox before submitting.";
+      formElement.reset();
+      const questionList = $("#application-question-list");
+      questionList.innerHTML = '<div class="application-question-row" data-application-question><label class="application-field">Question<input data-question-text maxlength="160" required placeholder="Enter a question"></label><label class="application-field">Answer type<select data-question-type><option value="short">Short answer</option><option value="long">Long answer</option></select></label><label class="application-required"><input data-question-required type="checkbox" checked> Required</label><button class="button button-quiet application-remove-question" type="button" data-remove-question aria-label="Remove question">×</button></div>';
+      await loadApplicationForms();
+    } catch (error) {
+      message.textContent = error.message;
+      message.classList.add("is-error");
+    } finally {
+      button.disabled = false;
+    }
+  });
+  $("#public-application-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    if (formElement.dataset.loaded !== "true" || !formElement.reportValidity()) return;
+    const submitButton = $("#public-application-submit");
+    const message = $("#public-application-message");
+    const answers = Object.fromEntries(new FormData(formElement).entries());
+    submitButton.disabled = true;
+    message.textContent = "Submitting your application…";
+    message.classList.remove("is-error");
+    try {
+      await requestJson("/api/applications/forms/" + encodeURIComponent(applicationPublicIdFromPath()), {
+        method: "POST",
+        body: JSON.stringify({ answers })
+      });
+      message.textContent = "Application submitted. The reviewing team will contact you by Discord DM.";
+      formElement.querySelectorAll("input, textarea").forEach((input) => { input.disabled = true; });
+    } catch (error) {
+      message.textContent = error.message;
+      message.classList.add("is-error");
+      submitButton.disabled = false;
+    }
+  });
+  document.addEventListener("click", async (event) => {
+    const copyButton = event.target.closest?.("[data-copy-application]");
+    if (!copyButton) return;
+    try {
+      await navigator.clipboard.writeText(copyButton.dataset.copyApplication);
+      showToast("Application link copied.");
+    } catch (error) {
+      showToast("Could not copy the application link: " + error.message);
+    }
+  });
   $("#moderation-open-panel").addEventListener("click", openModerationPanel);
   $("#moderation-type").addEventListener("change", (event) => {
     const enabled = event.target.value === "Ban Bolo";

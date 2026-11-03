@@ -1118,3 +1118,48 @@ input, select, textarea { background: #0d0d10; border-color: #303036; color: #f4
 .route-page[data-page="businesses"] .page-heading h1,
 .route-page[data-page="wallet"] .page-heading h1,
 .route-page[data-page="events"] .page-heading h1 { color: #f3f5f6; }
+
+.applications-page > .page-heading { gap: 18px; }
+.application-builder-grid { display: grid; grid-template-columns: minmax(0,1.15fr) minmax(290px,.85fr); align-items: start; gap: 16px; }
+.application-builder, .application-forms-panel { min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: #101317; }
+.application-builder-fields { display: grid; gap: 17px; padding: 18px; }
+.application-field { display: grid; gap: 7px; color: #aeb8bd; font-size: 11px; font-weight: 600; }
+.application-field input, .application-field textarea, .application-field select { width: 100%; min-height: 38px; padding: 9px 11px; border: 1px solid #30363c; border-radius: 7px; color: #e7ecee; background: #0c0f12; font: inherit; }
+.application-field textarea { min-height: 76px; resize: vertical; }
+.application-question-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.application-question-heading h3 { color: #e4e9eb; font: 600 14px var(--display); }
+.application-question-heading p { margin-top: 4px; color: #818b91; font-size: 10px; }
+.application-question-list { display: grid; gap: 10px; }
+.application-question-row { position: relative; display: grid; grid-template-columns: minmax(0,1fr) minmax(140px,.45fr); align-items: end; gap: 12px; padding: 14px 42px 14px 13px; border: 1px solid #2a3035; border-radius: 9px; background: #0c0f12; }
+.application-required { display: flex; align-items: center; gap: 7px; color: #929da3; font-size: 10px; }
+.application-required input { accent-color: #9bbcd0; }
+.application-remove-question { position: absolute; top: 8px; right: 8px; width: 26px; min-height: 26px; padding: 0; color: #a7afb4; font-size: 18px; }
+.application-builder-message { min-height: 18px; padding: 0 18px 14px; color: #94c6a4; font-size: 11px; }
+.application-builder-message.is-error { color: #e19c95; }
+.application-forms-list { display: grid; gap: 0; padding: 0 16px 12px; }
+.application-form-item { display: grid; gap: 8px; padding: 13px 0; border-bottom: 1px solid #252b30; }
+.application-form-item:last-child { border-bottom: 0; }
+.application-form-item strong { color: #dce2e5; font: 600 12px var(--display); }
+.application-form-item small { color: #818b91; font-size: 9px; overflow-wrap: anywhere; }
+.application-form-item a { color: #9dc2d4; font-size: 10px; overflow-wrap: anywhere; }
+.application-form-actions { display: flex; align-items: center; gap: 8px; }
+.application-form-actions .button { min-height: 28px; font-size: 9px; }
+.application-published-link { display: grid; gap: 8px; margin: 14px 16px; padding: 12px; border: 1px solid rgba(139,190,163,.25); border-radius: 8px; background: rgba(57,98,72,.12); }
+.application-published-link[hidden] { display: none; }
+.application-published-link strong { color: #a8d1b3; font-size: 10px; }
+.application-published-link a { color: #b6d5e0; font-size: 10px; overflow-wrap: anywhere; }
+.public-application-form { display: grid; gap: 17px; max-width: 880px; padding: 22px; border: 1px solid var(--line); border-radius: 12px; background: #101317; }
+.public-application-form .application-builder-message { padding: 0; }
+.public-application-question { display: grid; gap: 8px; }
+.public-application-question label { color: #dce2e5; font-size: 12px; font-weight: 600; }
+.public-application-question label span { color: #dc9890; }
+.public-application-question input, .public-application-question textarea { width: 100%; min-height: 40px; padding: 10px 12px; border: 1px solid #30363c; border-radius: 8px; color: #edf0f2; background: #0c0f12; font: inherit; }
+.public-application-question textarea { min-height: 120px; resize: vertical; }
+.public-application-form > button { justify-self: start; }
+@media (max-width: 850px) {
+  .application-builder-grid { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 560px) {
+  .applications-page > .page-heading { align-items: flex-start; flex-direction: column; }
+  .application-question-row { grid-template-columns: minmax(0,1fr); }
+}

@@ -315,16 +315,134 @@ async function updateModerationLog(robloxId, logId, updates) {
     .set(updates, { merge: true });
 }
 
+async function createApplicationForm(form) {
+  const db = getFirestore();
+  const id = crypto.randomUUID();
+  const record = {
+    ...form,
+    publicId: crypto.randomBytes(24).toString("base64url"),
+    createdAt: new Date().toISOString()
+  };
+  await db.collection("applicationForms").doc(id).set(record);
+  return { id, ...record };
+}
+
+async function getApplicationForms() {
+  const snapshot = await getFirestore().collection("applicationForms").orderBy("createdAt", "desc").limit(100).get();
+  return snapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
+}
+
+async function getPublicApplicationForm(publicId) {
+  const snapshot = await getFirestore().collection("applicationForms").where("publicId", "==", String(publicId)).limit(1).get();
+  if (snapshot.empty) return null;
+  const document = snapshot.docs[0];
+  return { id: document.id, ...document.data() };
+}
+
+async function createApplicationSubmission(form, applicant, answers) {
+  const db = getFirestore();
+  const id = form.id + "_" + applicant.discordId;
+  const ref = db.collection("applicationSubmissions").doc(id);
+  return db.runTransaction(async (transaction) => {
+    const [formSnapshot, submissionSnapshot] = await Promise.all([transaction.get(db.collection("applicationForms").doc(form.id)), transaction.get(ref)]);
+    if (!formSnapshot.exists || formSnapshot.get("publicId") !== form.publicId) return { error: "application_unavailable" };
+    if (submissionSnapshot.exists) return { error: "already_applied" };
+    const submission = {
+      formId: form.id,
+      formTitle: form.title,
+      questions: form.questions,
+      answers,
+      applicant,
+      status: "pending",
+      notificationStatus: "pending",
+      createdAt: new Date().toISOString()
+    };
+    transaction.create(ref, submission);
+    return { id, ...submission };
+  });
+}
+
+async function getApplicationSubmission(id) {
+  const snapshot = await getFirestore().collection("applicationSubmissions").doc(String(id)).get();
+  return snapshot.exists ? { id: snapshot.id, ...snapshot.data() } : null;
+}
+
+async function listPendingApplicationNotifications() {
+  const snapshot = await getFirestore().collection("applicationSubmissions")
+    .where("notificationStatus", "==", "pending")
+    .limit(25)
+    .get();
+  return snapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
+}
+
+async function claimApplicationNotification(id) {
+  const ref = getFirestore().collection("applicationSubmissions").doc(String(id));
+  return getFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) return null;
+    const submission = snapshot.data();
+    const stale = submission.notificationStatus === "sending" &&
+      Date.now() - Date.parse(submission.notificationStartedAt || "") > 60_000;
+    if (submission.status !== "pending" || (submission.notificationStatus !== "pending" && !stale)) return null;
+    const notificationStartedAt = new Date().toISOString();
+    transaction.update(ref, { notificationStatus: "sending", notificationStartedAt });
+    return { id: snapshot.id, ...submission, notificationStartedAt };
+  });
+}
+
+async function completeApplicationNotification(id, outcome) {
+  const ref = getFirestore().collection("applicationSubmissions").doc(String(id));
+  return getFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists || snapshot.get("notificationStatus") !== "sending") return false;
+    transaction.update(ref, outcome.status === "sent"
+      ? {
+          notificationStatus: "sent",
+          discordChannelId: String(outcome.channelId),
+          discordMessageId: String(outcome.messageId),
+          notificationError: null
+        }
+      : { notificationStatus: "pending", notificationError: String(outcome.error || "Discord notification failed").slice(0, 500) });
+    return true;
+  });
+}
+
+async function reviewApplicationSubmission(id, outcome) {
+  const ref = getFirestore().collection("applicationSubmissions").doc(String(id));
+  return getFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists || snapshot.get("status") !== "pending") return null;
+    const submission = snapshot.data();
+    const reviewed = {
+      status: outcome.status,
+      reviewReason: String(outcome.reason),
+      reviewerDiscordId: String(outcome.reviewerDiscordId),
+      reviewedAt: new Date().toISOString()
+    };
+    transaction.update(ref, reviewed);
+    return { id: snapshot.id, ...submission, ...reviewed };
+  });
+}
+
 module.exports = {
   createVerificationRequest,
+  createApplicationForm,
+  createApplicationSubmission,
   createModerationLog,
   deleteProfileRecord,
   enqueueErlcVoiceCommand,
+  getApplicationForms,
+  getApplicationSubmission,
   getFirestore,
+  getPublicApplicationForm,
   getModerationLogs,
   getModerationShift,
   getErlcPlaytimeMonitor,
   getProfileRecord,
+  listPendingApplicationNotifications,
+  claimApplicationNotification,
+  completeApplicationNotification,
+  reviewApplicationSubmission,
   getRobloxPlaytime,
   getVerificationAccess,
   saveDiscordOAuthTokens,

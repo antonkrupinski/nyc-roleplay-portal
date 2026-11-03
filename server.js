@@ -2,12 +2,17 @@ const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const crypto = require("node:crypto");
+const { normalizeApplicationAnswers, normalizeApplicationForm } = require("./applications");
 const {
   createVerificationRequest,
+  createApplicationForm,
+  createApplicationSubmission,
   createModerationLog,
   deleteProfileRecord,
   enqueueErlcVoiceCommand,
   getErlcPlaytimeMonitor,
+  getApplicationForms,
+  getPublicApplicationForm,
   getModerationLogs,
   getModerationShift,
   getRobloxPlaytime,
@@ -41,10 +46,13 @@ const COOKIE_SECURE = process.env.NODE_ENV === "production";
 const COOKIE_NAME = COOKIE_SECURE ? "__Host-nycrp_session" : "nycrp_session";
 const STATE_COOKIE = COOKIE_SECURE ? "__Host-nycrp_state" : "nycrp_state";
 const NEXT_COOKIE = COOKIE_SECURE ? "__Host-nycrp_next" : "nycrp_next";
+const ROBLOX_NEXT_COOKIE = COOKIE_SECURE ? "__Host-nycrp_roblox_next" : "nycrp_roblox_next";
 const ROBLOX_STATE_COOKIE = COOKIE_SECURE ? "__Host-nycrp_roblox_state" : "nycrp_roblox_state";
 const ROBLOX_VERIFIER_COOKIE = COOKIE_SECURE ? "__Host-nycrp_roblox_verifier" : "nycrp_roblox_verifier";
 const MAX_BODY = 64 * 1024;
 const MODERATION_ROLE_ID = "1555316953864998994";
+const APPLICATION_MANAGER_ROLE_ID = "1567209306317791442";
+const APPLICATION_PUBLIC_ID_PATTERN = /^[A-Za-z0-9_-]{32}$/;
 const ERLC_WEBHOOK_PUBLIC_KEY = crypto.createPublicKey({
   key: Buffer.from("MCowBQYDK2VwAyEAjSICb9pp0kHizGQtdG8ySWsDChfGqi+gyFCttigBNOA=", "base64"),
   format: "der",
@@ -122,12 +130,14 @@ function escapeHtml(value) {
   return String(value || "").replace(/[&<>\"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[character]);
 }
 
-function renderAccessGate({ state, user, message = "" }) {
+function renderAccessGate({ state, user, message = "", next = "/" }) {
   const discordReady = isDiscordConfigured();
   const robloxReady = isRobloxConfigured();
   const invite = process.env.DISCORD_INVITE_URL;
-  const status = state === "login" ? "01 · DISCORD" : state === "verify" ? "02 · ROBLOX" : state === "pending" ? "03 · SERVER ROLE" : state === "join" ? "SERVER ACCESS" : "SYSTEM STATUS";
-  const heading = state === "login" ? "Sign in to your city." : state === "verify" ? "Verify your Roblox account." : state === "pending" ? "Finishing your verification." : state === "join" ? "Join the Discord server." : "CAD access is unavailable.";
+  const returnPath = safeNext(next);
+  const nextQuery = returnPath === "/" ? "" : "?next=" + encodeURIComponent(returnPath);
+  const status = state === "login" ? "01 · DISCORD" : state === "verify" ? "02 · ROBLOX" : state === "pending" ? "03 · SERVER ROLE" : state === "join" ? "SERVER ACCESS" : state === "restricted" ? "RESTRICTED ACCESS" : "SYSTEM STATUS";
+  const heading = state === "login" ? "Sign in to your city." : state === "verify" ? "Verify your Roblox account." : state === "pending" ? "Finishing your verification." : state === "join" ? "Join the Discord server." : state === "restricted" ? "Applications are restricted." : "CAD access is unavailable.";
   const description = state === "login"
     ? "Discord sign-in is required. After signing in, connect the Roblox account you use in ER:LC to unlock the CAD."
     : state === "verify"
@@ -136,17 +146,21 @@ function renderAccessGate({ state, user, message = "" }) {
         ? "Your Roblox account is linked. The verification bot is applying your Discord role; this page will check again automatically."
       : state === "join"
         ? "Your Discord account is signed in, but it is not a member of the roleplay server yet. Join it, then come back here."
+      : state === "restricted"
+        ? "Your account does not have the required applications staff role."
         : "The verification service is not responding. CAD access stays locked until it is available.";
   const action = state === "login"
-    ? discordReady ? '<a class="action" href="/auth/discord">Continue with Discord <span>↗</span></a>' : '<span class="action disabled">Discord sign-in setup is required</span>'
+    ? discordReady ? '<a class="action" href="/auth/discord' + nextQuery + '">Continue with Discord <span>↗</span></a>' : '<span class="action disabled">Discord sign-in setup is required</span>'
     : state === "verify"
-      ? robloxReady ? '<a class="action" href="/auth/roblox">Authorize Roblox <span>↗</span></a>' : '<span class="action disabled">Verification setup is required</span>'
+      ? robloxReady ? '<a class="action" href="/auth/roblox' + nextQuery + '">Authorize Roblox <span>↗</span></a>' : '<span class="action disabled">Verification setup is required</span>'
       : state === "pending"
-        ? '<a class="action" href="/">Check verification <span>↻</span></a>'
+        ? '<a class="action" href="' + escapeHtml(returnPath) + '">Check verification <span>↻</span></a>'
       : state === "join"
         ? invite ? '<a class="action" href="' + escapeHtml(invite) + '" rel="noreferrer">Join the server <span>↗</span></a>' : '<span class="action disabled">Ask an administrator for the Discord invite</span>'
+      : state === "restricted"
+        ? '<a class="action" href="/">Return to the CAD <span>↗</span></a>'
         : '<a class="action" href="/">Try again <span>↗</span></a>';
-  const refresh = state === "pending" ? '<meta http-equiv="refresh" content="4">' : "";
+  const refresh = state === "pending" ? '<meta http-equiv="refresh" content="4;url=' + escapeHtml(returnPath) + '">' : "";
   const account = user ? '<div class="account"><span class="account-dot"></span><span>Signed in as <strong>' + escapeHtml(user.username) + '</strong></span><a href="/auth/logout">Sign out</a></div>' : "";
   const detail = message ? '<p class="detail"><span class="detail-icon">!</span><span>' + escapeHtml(message) + '</span></p>' : "";
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#090c0f">${refresh}<link rel="icon" type="image/png" href="/favicon.png?v=2"><title>NYC Roleplay — Secure access</title><style>
@@ -164,7 +178,16 @@ function sendGate(response, status, options) {
 }
 
 function safeNext(value) {
-  return value === "/auth/roblox" ? value : "/";
+  return value === "/auth/roblox" || value === "/applications" ||
+    (typeof value === "string" && (/^\/apply\/[A-Za-z0-9_-]{32}$/.test(value)))
+    ? value
+    : "/";
+}
+
+function pathWithQuery(value, key, queryValue) {
+  const target = new URL(safeNext(value), "https://portal.invalid");
+  target.searchParams.set(key, queryValue);
+  return target.pathname + target.search;
 }
 
 async function getBotAccess(discordId, force = false) {
@@ -458,6 +481,53 @@ async function requireModeration(response, user) {
     return null;
   }
   return access;
+}
+
+async function requireApplicationManager(response, user) {
+  if (!await requireVerified(response, user, true)) return null;
+  const access = await getBotAccess(user.id);
+  if (!access.roleIds.includes(APPLICATION_MANAGER_ROLE_ID)) {
+    sendJson(response, 403, { error: "The applications staff role is required.", code: "applications_role_required" });
+    return null;
+  }
+  return access;
+}
+
+async function requireApplicationPageAccess(response, user, next, managerOnly = false, verificationError = "") {
+  if (!user) {
+    sendGate(response, 200, { state: "login", next });
+    return false;
+  }
+  const access = await getBotAccess(user.id, true);
+  if (!access.available) {
+    sendGate(response, 503, { state: "unavailable", next, user });
+    return false;
+  }
+  if (!access.member) {
+    sendGate(response, 403, { state: "join", next, user });
+    return false;
+  }
+  if (access.verificationPending) {
+    sendGate(response, 200, { state: "pending", next, user });
+    return false;
+  }
+  if (!access.roblox?.robloxId || !access.verified) {
+    const messages = {
+      linked: "That Roblox account is already linked to a different Discord account.",
+      failed: "Roblox verification could not be completed. Please try again.",
+      cancelled: "Roblox account authorization was cancelled.",
+      state: "Roblox sign-in expired. Please start again.",
+      setup: "Roblox verification is not configured yet."
+    };
+    const error = verificationError || access.verificationError;
+    sendGate(response, 200, { state: "verify", next, user, message: messages[error] || "" });
+    return false;
+  }
+  if (managerOnly && !access.roleIds.includes(APPLICATION_MANAGER_ROLE_ID)) {
+    sendGate(response, 403, { state: "restricted", next, user });
+    return false;
+  }
+  return true;
 }
 
 async function searchRobloxUsers(keyword) {
@@ -1237,6 +1307,74 @@ async function handleRequest(request, response) {
       });
     }
 
+    if (url.pathname === "/api/applications/manage/forms") {
+      if (!await requireApplicationManager(response, user)) return;
+      if (request.method === "GET") return sendJson(response, 200, { forms: await getApplicationForms() });
+      if (request.method === "POST") {
+        if (!checkOrigin(request, url)) return sendJson(response, 403, { error: "Request origin was not allowed." });
+        let body;
+        try { body = await readBody(request); } catch (error) { return sendJson(response, 400, { error: error.message }); }
+        const normalized = normalizeApplicationForm(body);
+        if (normalized.error) return sendJson(response, 400, { error: normalized.error });
+        const access = await getBotAccess(user.id);
+        const form = await createApplicationForm({
+          ...normalized,
+          createdBy: {
+            discordId: user.id,
+            discordUsername: safeString(user.discordUsername || user.username, "Staff member", 32),
+            robloxUsername: access.roblox.robloxUsername
+          }
+        });
+        const forwardedHost = typeof request.headers["x-forwarded-host"] === "string"
+          ? request.headers["x-forwarded-host"].split(",")[0].trim()
+          : "";
+        const publicHost = forwardedHost || request.headers.host || url.host;
+        const forwardedProtocol = typeof request.headers["x-forwarded-proto"] === "string"
+          ? request.headers["x-forwarded-proto"].split(",")[0].trim()
+          : "";
+        const protocol = forwardedProtocol || (process.env.VERCEL ? "https" : url.protocol.slice(0, -1));
+        const origin = new URL(protocol + "://" + publicHost).origin;
+        return sendJson(response, 201, { form, url: new URL("/apply/" + form.publicId, origin).toString() });
+      }
+      return sendJson(response, 405, { error: "Method not allowed." });
+    }
+
+    const applicationFormMatch = url.pathname.match(/^\/api\/applications\/forms\/([A-Za-z0-9_-]{32})$/);
+    if (applicationFormMatch) {
+      if (!await requireVerified(response, user, true)) return;
+      const form = await getPublicApplicationForm(applicationFormMatch[1]);
+      if (!form) return sendJson(response, 404, { error: "This application is no longer available." });
+      if (request.method === "GET") {
+        return sendJson(response, 200, {
+          form: {
+            publicId: form.publicId,
+            title: form.title,
+            description: form.description,
+            questions: form.questions
+          }
+        });
+      }
+      if (request.method === "POST") {
+        if (!checkOrigin(request, url)) return sendJson(response, 403, { error: "Request origin was not allowed." });
+        let body;
+        try { body = await readBody(request); } catch (error) { return sendJson(response, 400, { error: error.message }); }
+        const normalized = normalizeApplicationAnswers(form, body);
+        if (normalized.error) return sendJson(response, 400, { error: normalized.error });
+        const access = await getBotAccess(user.id);
+        const result = await createApplicationSubmission(form, {
+          discordId: user.id,
+          discordUsername: safeString(user.discordUsername || user.username, "Discord resident", 32),
+          displayName: safeString(user.displayName || user.username, "Discord resident", 36),
+          robloxId: access.roblox.robloxId,
+          robloxUsername: access.roblox.robloxUsername
+        }, normalized.answers);
+        if (result.error === "already_applied") return sendJson(response, 409, { error: "You have already submitted this application." });
+        if (result.error) return sendJson(response, 404, { error: "This application is no longer available." });
+        return sendJson(response, 201, { ok: true });
+      }
+      return sendJson(response, 405, { error: "Method not allowed." });
+    }
+
     if (url.pathname.startsWith("/api/moderation/")) {
       const moderationAccess = await requireModeration(response, user);
       if (!moderationAccess) return;
@@ -1582,6 +1720,7 @@ async function handleRequest(request, response) {
           robloxId: access.roblox?.robloxId || null,
           robloxUsername: access.roblox?.robloxUsername || null,
           moderationAccess: access.roleIds.includes(MODERATION_ROLE_ID),
+          applicationManagerAccess: access.roleIds.includes(APPLICATION_MANAGER_ROLE_ID),
           discordRoleAuthorizationRequired: !access.roleAccessAuthorized,
           seniorHighRanking: isSeniorHighRanking(user),
           seniorHighRankingTitle: isSeniorHighRanking(user) ? "Senior High Ranking" : null
@@ -2095,8 +2234,10 @@ async function handleRequest(request, response) {
       const access = await getBotAccess(user.id, true);
       if (!access.available) return sendGate(response, 503, { state: "unavailable", user });
       if (!access.member) return sendGate(response, 403, { state: "join", user });
-      if (access.verified && access.roblox?.robloxId) return redirect(response, "/");
-      if (access.verificationPending) return redirect(response, "/");
+      const next = safeNext(url.searchParams.get("next"));
+      if (access.verified && access.roblox?.robloxId) return redirect(response, next);
+      if (access.verificationPending) return redirect(response, next);
+      setCookie(response, ROBLOX_NEXT_COOKIE, next, 600);
       const state = crypto.randomBytes(32).toString("base64url");
       const verifier = crypto.randomBytes(48).toString("base64url");
       const challenge = crypto.createHash("sha256").update(verifier).digest("base64url");
@@ -2116,20 +2257,22 @@ async function handleRequest(request, response) {
 
     if (request.method === "GET" && url.pathname === "/auth/roblox/callback") {
       const cookies = readCookies(request);
+      const next = safeNext(cookies[ROBLOX_NEXT_COOKIE]);
       const state = url.searchParams.get("state");
       const stateCookie = cookies[ROBLOX_STATE_COOKIE];
       const verifier = cookies[ROBLOX_VERIFIER_COOKIE];
       clearCookie(response, ROBLOX_STATE_COOKIE);
       clearCookie(response, ROBLOX_VERIFIER_COOKIE);
-      if (url.searchParams.has("error")) return redirect(response, "/?verifyError=cancelled");
+      clearCookie(response, ROBLOX_NEXT_COOKIE);
+      if (url.searchParams.has("error")) return redirect(response, pathWithQuery(next, "verifyError", "cancelled"));
       if (!state || !stateCookie || state.length !== stateCookie.length || !crypto.timingSafeEqual(Buffer.from(state), Buffer.from(stateCookie)) || !verifier) {
-        return redirect(response, "/?verifyError=state");
+        return redirect(response, pathWithQuery(next, "verifyError", "state"));
       }
       if (!user) return redirect(response, "/auth/discord?next=%2Fauth%2Froblox");
-      if (!isRobloxConfigured()) return redirect(response, "/?verifyError=setup");
+      if (!isRobloxConfigured()) return redirect(response, pathWithQuery(next, "verifyError", "setup"));
       try {
         const code = url.searchParams.get("code");
-        if (!code) return redirect(response, "/?verifyError=cancelled");
+        if (!code) return redirect(response, pathWithQuery(next, "verifyError", "cancelled"));
         const credentials = Buffer.from(process.env.ROBLOX_CLIENT_ID + ":" + process.env.ROBLOX_CLIENT_SECRET).toString("base64");
         const tokenResponse = await fetch("https://apis.roblox.com/oauth/v1/token", {
           method: "POST",
@@ -2157,11 +2300,11 @@ async function handleRequest(request, response) {
         await createVerificationRequest(user.id, { robloxId: robloxUser.id, robloxUsername: robloxUser.username });
         accessCache.delete(user.id);
         setCookie(response, COOKIE_NAME, makeSession({ ...user, robloxId: robloxUser.id, robloxUsername: robloxUser.username }), 7 * 24 * 60 * 60);
-        return redirect(response, "/?verified=pending");
+        return redirect(response, pathWithQuery(next, "verified", "pending"));
       } catch (error) {
         console.error("Roblox verification failed:", error.message);
         const code = error.status === 409 ? "linked" : "failed";
-        return redirect(response, "/?verifyError=" + code);
+        return redirect(response, pathWithQuery(next, "verifyError", code));
       }
     }
 
@@ -2176,6 +2319,12 @@ async function handleRequest(request, response) {
         }
       }
       return redirect(response, "/");
+    }
+
+    const publicApplicationPageMatch = url.pathname.match(/^\/apply\/([A-Za-z0-9_-]{32})$/);
+    if (request.method === "GET" && (url.pathname === "/applications" || publicApplicationPageMatch)) {
+      if (!await requireApplicationPageAccess(response, user, url.pathname, url.pathname === "/applications", url.searchParams.get("verifyError"))) return;
+      return serveFile(response, path.join(ROOT, "index.html"));
     }
 
     if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
