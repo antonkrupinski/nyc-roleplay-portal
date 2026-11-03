@@ -1165,13 +1165,14 @@ async function serveFile(response, filePath) {
     ".css": "text/css; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
     ".png": "image/png",
+    ".webp": "image/webp",
     ".svg": "image/svg+xml"
   };
   try {
     const content = await fs.readFile(filePath);
     response.writeHead(200, {
       "Content-Type": contentTypes[extension] || "application/octet-stream",
-      "Cache-Control": extension === ".png" ? "public, max-age=86400" : "no-cache"
+      "Cache-Control": [".png", ".webp"].includes(extension) ? "public, max-age=86400" : "no-cache"
     });
     response.end(content);
   } catch {
@@ -2257,4 +2258,4 @@ if (require.main === module) {
   startDepartmentResetTimer();
 }
 
-module.exports = { checkOrigin, handleRequest, licenseCatalog, searchRobloxUsers, server, startServer };
+module.exports = { checkOrigin, handleRequest, licenseCatalog, searchRobloxUsers, serveFile, server, startServer };
