@@ -147,7 +147,7 @@ function sendGate(response, status, options) {
   response.writeHead(status, {
     "Content-Type": "text/html; charset=utf-8",
     "Cache-Control": "no-store",
-    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; form-action https://discord.com https://apis.roblox.com; base-uri 'none'; frame-ancestors 'none'"
+    "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data: https: blob:; form-action https://discord.com https://apis.roblox.com; base-uri 'none'; frame-ancestors 'none'"
   });
   response.end(renderAccessGate(options));
 }
@@ -852,7 +852,7 @@ function securityHeaders() {
     "X-Frame-Options": "DENY",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https://cdn.discordapp.com data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self' https://discord.com"
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' https: data: blob:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self' https://discord.com"
   };
 }
 
