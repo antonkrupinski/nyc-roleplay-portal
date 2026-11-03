@@ -150,6 +150,8 @@ test("the management page is absent from navigation and both portal copies suppo
     const store = fs.readFileSync(path.join(appRoot, "firestore-store.js"), "utf8");
     const styles = fs.readFileSync(path.join(appRoot, "styles.css"), "utf8");
 
+    assert.match(store, /FIREBASE_PROJECT_ID \|\| "nyrp-3a5f6"/);
+    assert.match(store, /FIREBASE_PROJECT_MISMATCH/);
     assert.match(html, /data-page="applications"/);
     assert.match(html, /data-page="apply"/);
     assert.doesNotMatch(html, /data-route="applications"/);

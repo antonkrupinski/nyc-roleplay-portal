@@ -18,7 +18,8 @@ function getFirestore() {
 
   const { applicationDefault, cert, initializeApp } = require("firebase-admin/app");
   const { getFirestore: createFirestore } = require("firebase-admin/firestore");
-  const options = { projectId: process.env.FIREBASE_PROJECT_ID || "nyrp-3a5f6" };
+  const projectId = process.env.FIREBASE_PROJECT_ID || "nyrp-3a5f6";
+  const options = { projectId };
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
     let serviceAccount;
     try {
@@ -26,6 +27,11 @@ function getFirestore() {
     } catch {
       const error = new Error("FIREBASE_SERVICE_ACCOUNT_JSON must contain valid service-account JSON.");
       error.code = "FIREBASE_CREDENTIALS_INVALID";
+      throw error;
+    }
+    if (serviceAccount.project_id && serviceAccount.project_id !== projectId) {
+      const error = new Error("FIREBASE_SERVICE_ACCOUNT_JSON belongs to a different project than FIREBASE_PROJECT_ID.");
+      error.code = "FIREBASE_PROJECT_MISMATCH";
       throw error;
     }
     options.credential = cert(serviceAccount);
