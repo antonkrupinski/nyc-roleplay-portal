@@ -465,15 +465,8 @@ async function searchRobloxUsers(keyword) {
   const cacheKey = normalized.toLowerCase();
   const cached = robloxUserSearchCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.users;
-  const url = new URL("https://users.roblox.com/v1/users/search");
-  url.search = new URLSearchParams({ keyword: normalized, limit: "10" }).toString();
-  const response = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "NYC-Roleplay-Portal/1.0" },
-    signal: AbortSignal.timeout(7000)
-  });
-  if (!response.ok) throw new Error("Roblox user search is unavailable.");
-  const data = await response.json();
-  const users = (Array.isArray(data.data) ? data.data : []).flatMap((item) => {
+  const headers = { Accept: "application/json", "User-Agent": "NYC-Roleplay-Portal/1.0" };
+  const normalizeUsers = (results) => (Array.isArray(results) ? results : []).flatMap((item) => {
     const id = String(item.id ?? "");
     if (!/^\d{1,24}$/.test(id) || typeof item.name !== "string") return [];
     return [{
@@ -483,6 +476,32 @@ async function searchRobloxUsers(keyword) {
       hasVerifiedBadge: item.hasVerifiedBadge === true
     }];
   });
+  let users;
+  try {
+    const url = new URL("https://users.roblox.com/v1/users/search");
+    url.search = new URLSearchParams({ keyword: normalized, limit: "10" }).toString();
+    const response = await fetch(url, {
+      headers,
+      signal: AbortSignal.timeout(7000)
+    });
+    if (!response.ok) throw new Error("Roblox keyword search returned HTTP " + response.status + ".");
+    const data = await response.json();
+    users = normalizeUsers(data.data);
+  } catch (searchError) {
+    try {
+      const response = await fetch("https://users.roblox.com/v1/usernames/users", {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ usernames: [normalized], excludeBannedUsers: false }),
+        signal: AbortSignal.timeout(7000)
+      });
+      if (!response.ok) throw new Error("Roblox username lookup returned HTTP " + response.status + ".");
+      const data = await response.json();
+      users = normalizeUsers(data.data);
+    } catch (fallbackError) {
+      throw new Error("Roblox user search failed: " + searchError.message + " " + fallbackError.message);
+    }
+  }
   robloxUserSearchCache.set(cacheKey, { users, expiresAt: Date.now() + 30_000 });
   return users;
 }
@@ -1261,7 +1280,8 @@ async function handleRequest(request, response) {
         if (keyword.length < 2) return sendJson(response, 200, { users: [] });
         try {
           return sendJson(response, 200, { users: await searchRobloxUsers(keyword) });
-        } catch {
+        } catch (error) {
+          console.error("Roblox moderation user search failed:", error.message);
           return sendJson(response, 502, { error: "Roblox user search is temporarily unavailable." });
         }
       }
@@ -2237,4 +2257,4 @@ if (require.main === module) {
   startDepartmentResetTimer();
 }
 
-module.exports = { checkOrigin, handleRequest, server, startServer };
+module.exports = { checkOrigin, handleRequest, searchRobloxUsers, server, startServer };
