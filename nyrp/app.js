@@ -1481,6 +1481,7 @@ async function initialize() {
     const errors = {
       missing_config: "Add Discord OAuth credentials to .env to enable sign-in.",
       oauth_failed: "Discord sign-in could not be completed. Please try again.",
+      role_access_required: "Authorize Discord role access to use staff moderation tools.",
       state_mismatch: "Sign-in expired. Please try connecting again."
     };
     showToast(errors[params.get("authError")] || "Discord sign-in failed.");
@@ -1490,6 +1491,15 @@ async function initialize() {
   try {
     const data = await requestJson("/api/me");
     currentUser = data.user || null;
+    if (currentUser?.discordRoleAuthorizationRequired) {
+      if (!sessionStorage.getItem("nycrp.discord-role-reauthorization-attempted")) {
+        sessionStorage.setItem("nycrp.discord-role-reauthorization-attempted", "true");
+        window.location.replace("/auth/discord");
+        return;
+      }
+    } else {
+      sessionStorage.removeItem("nycrp.discord-role-reauthorization-attempted");
+    }
     if (currentUser && data.profile) {
       profile = { ...defaultProfile, ...data.profile };
       vehicles = [];

@@ -43,13 +43,14 @@ function getFirestore() {
   return firestore;
 }
 
-async function getVerificationAccess(discordId) {
+async function getVerificationAccess(discordId, encryptionSecret) {
   const db = getFirestore();
   const id = String(discordId);
-  const [memberSnapshot, linkSnapshot, requestSnapshot] = await Promise.all([
+  const [memberSnapshot, linkSnapshot, requestSnapshot, oauthSnapshot] = await Promise.all([
     db.collection("guildMembers").doc(id).get(),
     db.collection("robloxLinks").doc(id).get(),
-    db.collection("verificationRequests").doc(id).get()
+    db.collection("verificationRequests").doc(id).get(),
+    db.collection("discordOAuthTokens").doc(id).get()
   ]);
   const member = memberSnapshot.exists ? memberSnapshot.data() : {};
   const link = linkSnapshot.exists ? linkSnapshot.data() : null;
@@ -61,15 +62,64 @@ async function getVerificationAccess(discordId) {
   const requestStatus = typeof request.status === "string" ? request.status.toLowerCase() : "";
   const linkHasRobloxId = link && typeof link.robloxId === "string" && /^\d{1,24}$/.test(link.robloxId);
   const verifiedByRequest = ["approved", "completed", "success", "verified", "accepted"].includes(requestStatus);
+  const discordOAuthTokens = oauthSnapshot.exists
+    ? decryptDiscordOAuthTokens(oauthSnapshot.data(), encryptionSecret)
+    : null;
   return {
     available: true,
     member: member.member === true,
+    guildId: typeof member.guildId === "string" ? member.guildId : "",
     roleIds,
+    discordOAuthTokens,
     verified: member.verified === true || verifiedByRequest || Boolean(linkHasRobloxId),
     roblox: link,
     verificationPending: ["pending", "processing"].includes(requestStatus) && !Boolean(linkHasRobloxId) && member.verified !== true,
     verificationError: requestStatus === "failed" ? request.error || "verification_failed" : null
   };
+}
+
+function discordOAuthEncryptionKey(secret) {
+  if (typeof secret !== "string" || secret.length < 32) {
+    throw new Error("A stable session secret is required to encrypt Discord OAuth tokens.");
+  }
+  return crypto.createHash("sha256").update("nyrp-discord-oauth\0").update(secret).digest();
+}
+
+function encryptDiscordOAuthTokens(tokens, secret) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", discordOAuthEncryptionKey(secret), iv);
+  const encrypted = Buffer.concat([cipher.update(JSON.stringify(tokens), "utf8"), cipher.final()]);
+  return {
+    iv: iv.toString("base64"),
+    authTag: cipher.getAuthTag().toString("base64"),
+    ciphertext: encrypted.toString("base64")
+  };
+}
+
+function decryptDiscordOAuthTokens(record, secret) {
+  const decipher = crypto.createDecipheriv(
+    "aes-256-gcm",
+    discordOAuthEncryptionKey(secret),
+    Buffer.from(record.iv, "base64")
+  );
+  decipher.setAuthTag(Buffer.from(record.authTag, "base64"));
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(record.ciphertext, "base64")),
+    decipher.final()
+  ]);
+  return JSON.parse(decrypted.toString("utf8"));
+}
+
+async function saveDiscordOAuthTokens(discordId, tokens, secret) {
+  const encrypted = encryptDiscordOAuthTokens(tokens, secret);
+  await getFirestore().collection("discordOAuthTokens").doc(String(discordId)).set({
+    ...encrypted,
+    updatedAt: new Date().toISOString()
+  });
+}
+
+async function deleteDiscordOAuthTokens(discordId) {
+  await getFirestore().collection("discordOAuthTokens").doc(String(discordId)).delete();
 }
 
 async function getRobloxPlaytime(robloxId) {
@@ -270,6 +320,8 @@ module.exports = {
   getProfileRecord,
   getRobloxPlaytime,
   getVerificationAccess,
+  saveDiscordOAuthTokens,
+  deleteDiscordOAuthTokens,
   resetDepartmentRecord,
   updateModerationLog,
   updateModerationShift,

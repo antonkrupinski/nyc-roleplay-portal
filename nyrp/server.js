@@ -13,6 +13,8 @@ const {
   getRobloxPlaytime,
   getProfileRecord,
   getVerificationAccess,
+  saveDiscordOAuthTokens,
+  deleteDiscordOAuthTokens,
   resetDepartmentRecord,
   updateModerationLog,
   updateModerationShift,
@@ -48,6 +50,7 @@ const ERLC_WEBHOOK_PUBLIC_KEY = crypto.createPublicKey({
   type: "spki"
 });
 const accessCache = new Map();
+const discordOAuthRefreshes = new Map();
 const robloxAvatarCache = new Map();
 const robloxUserSearchCache = new Map();
 const SENIOR_HIGH_RANKING_USERNAME = String(process.env.SENIOR_HIGH_RANKING_USERNAME || "eddieplayz_yt").trim().toLowerCase();
@@ -167,12 +170,21 @@ async function getBotAccess(discordId, force = false) {
   const cached = accessCache.get(discordId);
   if (!force && cached && Date.now() - cached.at < 2_500) return cached.value;
   try {
-    const data = await getVerificationAccess(discordId);
+    const data = await getVerificationAccess(discordId, SESSION_SECRET);
     const robloxId = typeof data.roblox?.robloxId === "string" && /^\d{1,24}$/.test(data.roblox.robloxId) ? data.roblox.robloxId : null;
+    let roleIds = [];
+    if (data.discordOAuthTokens) {
+      try {
+        roleIds = await getCurrentDiscordRoleIds(discordId, data.guildId, data.discordOAuthTokens);
+      } catch (error) {
+        console.error("Could not verify Discord roles for member " + discordId + ":", error.message);
+      }
+    }
     const value = {
       available: Boolean(data.available),
       member: Boolean(data.member),
-      roleIds: Array.isArray(data.roleIds) ? data.roleIds.filter((roleId) => typeof roleId === "string" && /^\d{17,20}$/.test(roleId)) : [],
+      roleIds,
+      roleAccessAuthorized: Boolean(data.discordOAuthTokens),
       verified: Boolean(data.verified),
       roblox: robloxId ? {
         robloxId,
@@ -183,9 +195,78 @@ async function getBotAccess(discordId, force = false) {
     };
     accessCache.set(discordId, { value, at: Date.now() });
     return value;
-  } catch {
-    return { available: false, member: false, verified: false };
+  } catch (error) {
+    console.error("Could not load Discord access data for member " + discordId + ":", error.message);
+    return { available: false, member: false, roleIds: [], roleAccessAuthorized: false, verified: false };
   }
+}
+
+async function refreshDiscordOAuthTokens(discordId, tokens) {
+  const pending = discordOAuthRefreshes.get(discordId);
+  if (pending) return pending;
+
+  const refresh = (async () => {
+    const response = await fetch("https://discord.com/api/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: process.env.DISCORD_CLIENT_ID,
+        client_secret: process.env.DISCORD_CLIENT_SECRET,
+        grant_type: "refresh_token",
+        refresh_token: tokens.refreshToken
+      }),
+      signal: AbortSignal.timeout(7000)
+    });
+    const result = await response.json();
+    if (!response.ok || !result.access_token || !result.refresh_token) {
+      throw new Error("Discord OAuth token refresh failed (HTTP " + response.status + ").");
+    }
+    const refreshed = {
+      accessToken: result.access_token,
+      refreshToken: result.refresh_token,
+      expiresAt: Date.now() + Math.max(0, Number(result.expires_in) || 0) * 1000
+    };
+    await saveDiscordOAuthTokens(discordId, refreshed, SESSION_SECRET);
+    return refreshed;
+  })();
+  discordOAuthRefreshes.set(discordId, refresh);
+  try {
+    return await refresh;
+  } finally {
+    if (discordOAuthRefreshes.get(discordId) === refresh) discordOAuthRefreshes.delete(discordId);
+  }
+}
+
+async function getCurrentDiscordRoleIds(discordId, guildId, initialTokens) {
+  if (!/^\d{17,20}$/.test(String(guildId || ""))) {
+    throw new Error("Discord guild ID is unavailable for this member.");
+  }
+  let tokens = initialTokens;
+  if (!tokens.accessToken || !tokens.refreshToken || !Number.isFinite(Number(tokens.expiresAt))) {
+    throw new Error("Stored Discord OAuth credentials are incomplete.");
+  }
+  if (Number(tokens.expiresAt) <= Date.now() + 60_000) {
+    tokens = await refreshDiscordOAuthTokens(discordId, tokens);
+  }
+
+  const requestMember = () => fetch(
+    "https://discord.com/api/users/@me/guilds/" + encodeURIComponent(guildId) + "/member",
+    {
+      headers: { Authorization: "Bearer " + tokens.accessToken },
+      signal: AbortSignal.timeout(7000)
+    }
+  );
+  let response = await requestMember();
+  if (response.status === 401) {
+    tokens = await refreshDiscordOAuthTokens(discordId, tokens);
+    response = await requestMember();
+  }
+  if (response.status === 404) return [];
+  if (!response.ok) throw new Error("Discord member role lookup failed (HTTP " + response.status + ").");
+  const member = await response.json();
+  return Array.isArray(member.roles)
+    ? member.roles.filter((roleId) => typeof roleId === "string" && /^\d{17,20}$/.test(roleId))
+    : [];
 }
 
 async function getErlcServer() {
@@ -1466,6 +1547,7 @@ async function handleRequest(request, response) {
           robloxId: access.roblox?.robloxId || null,
           robloxUsername: access.roblox?.robloxUsername || null,
           moderationAccess: access.roleIds.includes(MODERATION_ROLE_ID),
+          discordRoleAuthorizationRequired: !access.roleAccessAuthorized,
           seniorHighRanking: isSeniorHighRanking(user),
           seniorHighRankingTitle: isSeniorHighRanking(user) ? "Senior High Ranking" : null
         },
@@ -1913,7 +1995,7 @@ async function handleRequest(request, response) {
         client_id: process.env.DISCORD_CLIENT_ID,
         redirect_uri: process.env.DISCORD_REDIRECT_URI,
         response_type: "code",
-        scope: "identify",
+        scope: "identify guilds.members.read",
         state
       });
       return redirect(response, "https://discord.com/oauth2/authorize?" + params.toString());
@@ -1959,8 +2041,17 @@ async function handleRequest(request, response) {
         displayName: safeString(discordUser.global_name || discordUser.username, "City Resident", 36),
         avatar: discordUser.avatar || null
       };
+      const grantedScopes = String(tokenData.scope || "").split(/\s+/);
+      if (grantedScopes.includes("guilds.members.read") && tokenData.refresh_token) {
+        await saveDiscordOAuthTokens(sessionUser.id, {
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token,
+          expiresAt: Date.now() + Math.max(0, Number(tokenData.expires_in) || 0) * 1000
+        }, SESSION_SECRET);
+        accessCache.delete(sessionUser.id);
+      }
       setCookie(response, COOKIE_NAME, makeSession(sessionUser), 7 * 24 * 60 * 60);
-      return redirect(response, next);
+      return redirect(response, grantedScopes.includes("guilds.members.read") ? next : "/?authError=role_access_required");
     }
 
     if (request.method === "GET" && url.pathname === "/auth/roblox") {
@@ -2041,6 +2132,14 @@ async function handleRequest(request, response) {
 
     if (request.method === "GET" && url.pathname === "/auth/logout") {
       clearCookie(response, COOKIE_NAME);
+      if (user) {
+        accessCache.delete(user.id);
+        try {
+          await deleteDiscordOAuthTokens(user.id);
+        } catch (error) {
+          console.error("Could not delete Discord OAuth credentials for member " + user.id + ":", error.message);
+        }
+      }
       return redirect(response, "/");
     }
 
