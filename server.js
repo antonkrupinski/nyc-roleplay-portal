@@ -85,12 +85,12 @@ const marketStocks = [
   { symbol: "NYT", company: "The New York Times Company", borough: "Manhattan", district: "620 Eighth Avenue", fallbackUsd: 69.58, fallbackChange: 0.16, fallbackPercent: 0.23 }
 ];
 const licenseCatalog = [
-  { id: "firearms", name: "Firearms", icon: "◈", art: "firearms", description: "Firearms authorization for your resident roleplay record.", requiredSeconds: 3 * 60 * 60, bannerUrl: "https://media.discordapp.net/attachments/1563648821055983741/1567045433069539349/Screenshot_2026-11-02_235929.png?ex=6aeac049&is=6ae96ec9&hm=8000913b5e84d597dd7fc9c14b1a360ebb3bc11d4f78b13d1cd976b16618d939&format=webp&quality=lossless&width=928&height=347" },
-  { id: "motor", name: "Motor License", icon: "▰", art: "motor", description: "Standard motor vehicle license for city roads.", requiredSeconds: 0, bannerUrl: "https://media.discordapp.net/attachments/1563648821055983741/1567045433551888524/Screenshot_2026-11-03_000738.png?ex=6aeac049&is=6ae96ec9&hm=201a282d95c1d811147cfb5f33d2556344892c0c995933f7d009831ffeb9f2a1&format=webp&quality=lossless&width=928&height=370" },
-  { id: "commercial-vehicle", name: "Commercial Vehicle", icon: "▱", art: "commercial", description: "Commercial vehicle permit for work and deliveries.", requiredSeconds: 5 * 60 * 60, bannerUrl: "https://media.discordapp.net/attachments/1563648821055983741/1567045433971179590/Screenshot_2026-11-03_001219.png?ex=6aeac049&is=6ae96ec9&hm=e2a50a49467b6700fa7f05a9ac91ab702e494a00ecb0f21ffc0ab5f7da18ad85&format=webp&quality=lossless&width=928&height=393" },
-  { id: "boating", name: "Boating License", icon: "⌁", art: "boating", description: "Permit for operating boats on city waterways.", requiredSeconds: 5 * 60 * 60, bannerUrl: "https://media.discordapp.net/attachments/1563648821055983741/1567045434751328308/Screenshot_2026-11-03_001805.png?ex=6aeac049&is=6ae96ec9&hm=4013b0cef41dd736a573fd432f1f5567519df14e5dc16b0e7962b9df359f5172&format=webp&quality=lossless&width=928&height=401" },
-  { id: "fishing", name: "Fishing License", icon: "✳", art: "fishing", description: "Permit for fishing at city piers and waterways.", requiredSeconds: 15 * 60, bannerUrl: "https://media.discordapp.net/attachments/1563648821055983741/1567045434352996453/Screenshot_2026-11-03_001522.png?ex=6aeac049&is=6ae96ec9&hm=6ac26f563687e432d14ed52cb0a0eb935185f4e4f779d4a2fa14657317a754ea&format=webp&quality=lossless&width=928&height=505" },
-  { id: "hunting", name: "Hunting License", icon: "✦", art: "hunting", description: "Permit for hunting roleplay activities.", requiredSeconds: 15 * 60, bannerUrl: "https://media.discordapp.net/attachments/1563648821055983741/1567045433069539349/Screenshot_2026-11-02_235929.png?ex=6aeac049&is=6ae96ec9&hm=8000913b5e84d597dd7fc9c14b1a360ebb3bc11d4f78b13d1cd976b16618d939&format=webp&quality=lossless&width=928&height=347" }
+  { id: "firearms", name: "Firearms", icon: "◈", art: "firearms", description: "Firearms authorization for your resident roleplay record.", requiredSeconds: 3 * 60 * 60, bannerUrl: "/assets/license-firearms-hunting.webp" },
+  { id: "motor", name: "Motor License", icon: "▰", art: "motor", description: "Standard motor vehicle license for city roads.", requiredSeconds: 0, bannerUrl: "/assets/license-motor.webp" },
+  { id: "commercial-vehicle", name: "Commercial Vehicle", icon: "▱", art: "commercial", description: "Commercial vehicle permit for work and deliveries.", requiredSeconds: 5 * 60 * 60, bannerUrl: "/assets/license-commercial.webp" },
+  { id: "boating", name: "Boating License", icon: "⌁", art: "boating", description: "Permit for operating boats on city waterways.", requiredSeconds: 5 * 60 * 60, bannerUrl: "/assets/license-boating.webp" },
+  { id: "fishing", name: "Fishing License", icon: "✳", art: "fishing", description: "Permit for fishing at city piers and waterways.", requiredSeconds: 15 * 60, bannerUrl: "/assets/license-fishing.webp" },
+  { id: "hunting", name: "Hunting License", icon: "✦", art: "hunting", description: "Permit for hunting roleplay activities.", requiredSeconds: 15 * 60, bannerUrl: "/assets/license-firearms-hunting.webp" }
 ];
 let marketCache;
 let marketCacheAt = 0;
@@ -2257,4 +2257,4 @@ if (require.main === module) {
   startDepartmentResetTimer();
 }
 
-module.exports = { checkOrigin, handleRequest, searchRobloxUsers, server, startServer };
+module.exports = { checkOrigin, handleRequest, licenseCatalog, searchRobloxUsers, server, startServer };
