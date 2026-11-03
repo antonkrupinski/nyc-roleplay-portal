@@ -365,6 +365,15 @@ function safeString(value, fallback, limit) {
   return normalized || fallback;
 }
 
+function normalizeDepartmentLogo(value, fallback = "") {
+  if (typeof value !== "string") return fallback;
+  const candidate = value.trim();
+  if (!candidate) return fallback;
+  const normalized = candidate.slice(0, 2000);
+  if (/^https?:\/\//i.test(normalized) || /^data:image\//i.test(normalized) || /^\//.test(normalized)) return normalized;
+  return fallback;
+}
+
 function normalizeProfile(input, previous = defaultProfile) {
   const value = input && typeof input === "object" ? input : {};
   const allowedBoroughs = new Set(["Manhattan", "Brooklyn", "Queens", "The Bronx", "Staten Island"]);
@@ -447,6 +456,7 @@ function defaultDepartmentState() {
       name: "MTA",
       description: "Moving the city, one stop and one borough at a time.",
       icon: "M",
+      logoUrl: "",
       color: "gold",
       settings: { allowLeaveRequests: true, shiftsEnabled: true },
       roles: newDepartmentRoles(),
@@ -1126,6 +1136,7 @@ async function handleRequest(request, response) {
           name: department.name,
           description: department.description,
           icon: department.icon,
+          logoUrl: department.logoUrl || "",
           color: department.color,
           memberCount: (department.members || []).length,
           activeShiftCount: (department.members || []).filter((member) => member.activeShift?.startedAt).length,
@@ -1171,6 +1182,7 @@ async function handleRequest(request, response) {
         name,
         description: safeString(body.description, "A New York City roleplay department.", 240),
         icon: safeString(body.icon, name.slice(0, 1).toUpperCase(), 3),
+        logoUrl: normalizeDepartmentLogo(body.logoUrl, ""),
         color: colors.has(body.color) ? body.color : "blue",
         settings: { allowLeaveRequests: body.allowLeaveRequests !== false, shiftsEnabled: true },
         roles: newDepartmentRoles(),
@@ -1227,6 +1239,10 @@ async function handleRequest(request, response) {
         department.name = name;
         department.description = safeString(body.description, department.description, 240);
         department.icon = safeString(body.icon, department.icon, 3);
+        if (Object.hasOwn(body, "logoUrl")) {
+          department.logoUrl = normalizeDepartmentLogo(body.logoUrl, department.logoUrl || "");
+          if (!body.logoUrl || String(body.logoUrl).trim() === "") department.logoUrl = "";
+        }
         if (colors.has(body.color)) department.color = body.color;
         department.settings = { ...department.settings, allowLeaveRequests: body.allowLeaveRequests === true, shiftsEnabled: body.shiftsEnabled !== false };
         return { department };
