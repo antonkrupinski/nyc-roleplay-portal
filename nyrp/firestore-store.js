@@ -54,12 +54,17 @@ async function getVerificationAccess(discordId) {
   const member = memberSnapshot.exists ? memberSnapshot.data() : {};
   const link = linkSnapshot.exists ? linkSnapshot.data() : null;
   const request = requestSnapshot.exists ? requestSnapshot.data() : {};
+  const rawRoles = member.roleIds ?? member.roles ?? member.discordRoles ?? [];
+  const roleIds = (Array.isArray(rawRoles) ? rawRoles : rawRoles && typeof rawRoles === "object" ? Object.keys(rawRoles).filter((roleId) => rawRoles[roleId]) : [])
+    .map((role) => typeof role === "string" ? role : role && typeof role.id === "string" ? role.id : "")
+    .filter((roleId) => /^\d{17,20}$/.test(roleId));
   const requestStatus = typeof request.status === "string" ? request.status.toLowerCase() : "";
   const linkHasRobloxId = link && typeof link.robloxId === "string" && /^\d{1,24}$/.test(link.robloxId);
   const verifiedByRequest = ["approved", "completed", "success", "verified", "accepted"].includes(requestStatus);
   return {
     available: true,
     member: member.member === true,
+    roleIds,
     verified: member.verified === true || verifiedByRequest || Boolean(linkHasRobloxId),
     roblox: link,
     verificationPending: ["pending", "processing"].includes(requestStatus) && !Boolean(linkHasRobloxId) && member.verified !== true,
@@ -196,16 +201,78 @@ async function resetDepartmentRecord(fallback, readLegacy, reset) {
   });
 }
 
+async function getModerationShift(discordId) {
+  const snapshot = await getFirestore().collection("moderationShifts").doc(String(discordId)).get();
+  if (!snapshot.exists) return { totalMinutes: 0, activeShift: null, shiftHistory: [] };
+  const record = snapshot.data();
+  return {
+    totalMinutes: Math.max(0, Math.floor(Number(record.totalMinutes) || 0)),
+    activeShift: record.activeShift?.startedAt ? record.activeShift : null,
+    shiftHistory: Array.isArray(record.shiftHistory) ? record.shiftHistory.slice(-20) : []
+  };
+}
+
+async function updateModerationShift(discordId, update) {
+  const ref = getFirestore().collection("moderationShifts").doc(String(discordId));
+  return getFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    const current = snapshot.exists ? snapshot.data() : { totalMinutes: 0, activeShift: null, shiftHistory: [] };
+    const result = update({
+      totalMinutes: Math.max(0, Math.floor(Number(current.totalMinutes) || 0)),
+      activeShift: current.activeShift?.startedAt ? current.activeShift : null,
+      shiftHistory: Array.isArray(current.shiftHistory) ? current.shiftHistory.slice(-20) : []
+    });
+    if (result.record) transaction.set(ref, result.record);
+    return result;
+  });
+}
+
+async function getModerationLogs(robloxId) {
+  const snapshot = await getFirestore()
+    .collection("moderationLogs")
+    .doc(String(robloxId))
+    .collection("entries")
+    .orderBy("createdAt", "desc")
+    .limit(100)
+    .get();
+  return snapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
+}
+
+async function createModerationLog(robloxId, entry) {
+  const id = crypto.randomUUID();
+  await getFirestore()
+    .collection("moderationLogs")
+    .doc(String(robloxId))
+    .collection("entries")
+    .doc(id)
+    .set(entry);
+  return { id, ...entry };
+}
+
+async function updateModerationLog(robloxId, logId, updates) {
+  await getFirestore()
+    .collection("moderationLogs")
+    .doc(String(robloxId))
+    .collection("entries")
+    .doc(String(logId))
+    .set(updates, { merge: true });
+}
+
 module.exports = {
   createVerificationRequest,
+  createModerationLog,
   deleteProfileRecord,
   enqueueErlcVoiceCommand,
   getFirestore,
+  getModerationLogs,
+  getModerationShift,
   getErlcPlaytimeMonitor,
   getProfileRecord,
   getRobloxPlaytime,
   getVerificationAccess,
   resetDepartmentRecord,
+  updateModerationLog,
+  updateModerationShift,
   updateDepartmentRecord,
   updateProfileRecord
 };

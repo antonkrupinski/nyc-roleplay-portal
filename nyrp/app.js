@@ -26,7 +26,8 @@ const pageInfo = {
   vehicles: { title: "Vehicles", section: "Civilian" },
   "city-hall": { title: "City Hall", section: "City departments" },
   leo: { title: "Police MDT", section: "Law enforcement" },
-  bolos: { title: "BOLOs", section: "Law enforcement" }
+  bolos: { title: "BOLOs", section: "Law enforcement" },
+  moderation: { title: "Moderation", section: "Staff tools" }
 };
 
 const profileKey = "nycrp.profile.v1";
@@ -51,6 +52,9 @@ let activeDepartment = null;
 let activeDepartmentTab = "overview";
 let adminData = null;
 let activeAdminTab = "overview";
+let moderationShift = { totalMinutes: 0, activeShift: null, shiftHistory: [] };
+let selectedModerationUser = null;
+let moderationShiftTimer = null;
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const profileModal = $("#profile-modal");
@@ -75,7 +79,8 @@ function showToast(message) {
 }
 
 function activatePage(requestedPage, updateHistory = false) {
-  const page = Object.hasOwn(pageInfo, requestedPage) || Object.hasOwn(departmentPageInfo, requestedPage) ? requestedPage : "profile";
+  const allowedPage = requestedPage === "moderation" && !currentUser?.moderationAccess ? "profile" : requestedPage;
+  const page = Object.hasOwn(pageInfo, allowedPage) || Object.hasOwn(departmentPageInfo, allowedPage) ? allowedPage : "profile";
   const info = pageInfo[page] || departmentPageInfo[page];
   const pageType = page.startsWith("department-") ? "department" : page;
   document.querySelectorAll(".route-page").forEach((section) => {
@@ -114,6 +119,157 @@ function formatCad(value) {
 function formatUsd(value) {
   const amount = Number(value);
   return "$" + new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number.isFinite(amount) ? amount : 0);
+}
+
+function updateModerationShiftUI() {
+  const state = $("#moderation-shift-state");
+  const time = $("#moderation-shift-time");
+  const button = $("#moderation-shift-button");
+  if (!state || !time || !button) return;
+  const active = Boolean(moderationShift.activeShift?.startedAt);
+  const elapsed = active ? Math.max(0, Math.floor((Date.now() - Date.parse(moderationShift.activeShift.startedAt)) / 60000)) : 0;
+  const minutes = Math.max(0, Number(moderationShift.totalMinutes) || 0) + elapsed;
+  state.textContent = active ? "ON SHIFT" : "OFF SHIFT";
+  state.classList.toggle("is-active", active);
+  time.textContent = minutesLabel(minutes);
+  button.textContent = active ? "End Shift" : "Start Shift";
+}
+
+function renderModerationTarget(user) {
+  const root = $("#moderation-target-card");
+  if (!root) return;
+  if (!user) {
+    root.innerHTML = '<div class="moderation-empty-target">Search for a Roblox username to view their public profile and moderation history.</div>';
+    return;
+  }
+  const avatar = user.avatarUrl
+    ? `<img src="${escapeHtml(user.avatarUrl)}" alt="">`
+    : escapeHtml((user.displayName || user.username || "R").slice(0, 1).toUpperCase());
+  const profileUrl = "https://www.roblox.com/users/" + encodeURIComponent(user.id) + "/profile";
+  const created = user.created ? new Date(user.created).toLocaleDateString() : "Unavailable";
+  root.innerHTML = `<div class="moderation-target-heading"><div class="moderation-avatar moderation-target-avatar">${avatar}</div><div class="moderation-target-title"><strong>${escapeHtml(user.displayName)}</strong><small>@${escapeHtml(user.username)}</small></div></div><div class="moderation-profile-actions"><a href="${profileUrl}" target="_blank" rel="noopener noreferrer">Roblox profile ↗</a></div><dl class="moderation-profile-details"><div><dt>Roblox ID</dt><dd>${escapeHtml(user.id)}</dd></div><div><dt>Account created</dt><dd>${escapeHtml(created)}</dd></div><div><dt>Account status</dt><dd>${user.isBanned ? "Roblox-banned" : "Active"}</dd></div><div><dt>Verified badge</dt><dd>${user.hasVerifiedBadge ? "Yes" : "No"}</dd></div></dl>${user.description ? `<p class="moderation-profile-description">${escapeHtml(user.description)}</p>` : ""}`;
+}
+
+function moderationStatusLabel(status) {
+  return ({
+    logged: "Logged",
+    enforced: "ER:LC ban issued",
+    rejected: "AI rejected",
+    "review-unavailable": "Review unavailable",
+    "pending-server-config": "ER:LC not configured",
+    "enforcement-pending": "Ban being processed",
+    "server-failed": "ER:LC failed"
+  })[status] || "Logged";
+}
+
+function renderModerationLogs(logs, username) {
+  const root = $("#moderation-logs-list");
+  if (!root) return;
+  if (!logs.length) {
+    root.innerHTML = `<div class="moderation-empty-logs">No results found. ${escapeHtml(username || "This user")} has no saved punishment logs.</div>`;
+    return;
+  }
+  root.innerHTML = logs.map((log) => {
+    let evidenceLink = "";
+    try {
+      const url = new URL(log.evidenceUrl);
+      if (url.protocol === "https:" && !url.username && !url.password) {
+        evidenceLink = `<a href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer">View proof ↗</a>`;
+      }
+    } catch {}
+    const failed = ["rejected", "review-unavailable", "pending-server-config", "server-failed"].includes(log.status);
+    const pending = log.status === "enforcement-pending";
+    const aiReview = log.aiReview?.summary ? `<div class="moderation-log-ai"><strong>AI review · ${Math.round((Number(log.aiReview.confidence) || 0) * 100)}%</strong><br>${escapeHtml(log.aiReview.summary)}</div>` : "";
+    return `<article class="moderation-log-entry"><div class="moderation-log-entry-head"><strong>${escapeHtml(log.type || "Moderation log")}</strong><small class="moderation-log-status ${failed ? "is-failed" : pending ? "is-pending" : ""}">${escapeHtml(moderationStatusLabel(log.status))}</small></div><p>${escapeHtml(log.reason || "")}</p>${log.evidenceDescription ? `<p><strong>Evidence:</strong> ${escapeHtml(log.evidenceDescription)}</p>` : ""}${evidenceLink}${aiReview}<small class="moderation-log-meta">${escapeHtml(log.moderatorRobloxUsername || log.moderatorDiscordUsername || "Moderator")} · ${escapeHtml(log.createdAt ? new Date(log.createdAt).toLocaleString() : "Unknown date")}</small></article>`;
+  }).join("");
+}
+
+async function loadModerationUser(robloxId) {
+  const root = $("#moderation-logs-list");
+  selectedModerationUser = null;
+  $("#moderation-user-id").value = "";
+  if (root) root.innerHTML = '<div class="moderation-empty-logs">Loading Roblox profile and moderation history…</div>';
+  try {
+    const data = await requestJson("/api/moderation/users/" + encodeURIComponent(robloxId));
+    selectedModerationUser = data.user;
+    $("#moderation-user-id").value = data.user.id;
+    $("#moderation-user-search").value = data.user.username;
+    $("#moderation-logs-search").value = data.user.username;
+    $("#moderation-selected-user").textContent = `Selected @${data.user.username} · Roblox ID ${data.user.id}`;
+    renderModerationTarget(data.user);
+    renderModerationLogs(Array.isArray(data.logs) ? data.logs : [], data.user.username);
+  } catch (error) {
+    if (root) root.innerHTML = `<div class="moderation-empty-logs">${escapeHtml(error.message)}</div>`;
+    showToast(error.message);
+  }
+}
+
+function bindModerationAutocomplete(inputId, listId) {
+  const input = $(inputId);
+  const list = $(listId);
+  if (!input || !list) return;
+  let debounceTimer;
+  let searchSequence = 0;
+  input.addEventListener("input", () => {
+    const query = input.value.trim();
+    const sequence = ++searchSequence;
+    clearTimeout(debounceTimer);
+    list.replaceChildren();
+    list.hidden = true;
+    if (inputId === "#moderation-user-search") {
+      selectedModerationUser = null;
+      $("#moderation-user-id").value = "";
+      $("#moderation-selected-user").textContent = "Choose a username from the Roblox suggestions.";
+    }
+    if (query.length < 2) return;
+    debounceTimer = setTimeout(async () => {
+      try {
+        const data = await requestJson("/api/moderation/roblox-search?q=" + encodeURIComponent(query));
+        if (sequence !== searchSequence || input.value.trim() !== query) return;
+        const usersFound = Array.isArray(data.users) ? data.users : [];
+        if (!usersFound.length) {
+          list.innerHTML = '<div class="moderation-empty-logs">No Roblox users found.</div>';
+          list.hidden = false;
+          return;
+        }
+        list.innerHTML = usersFound.map((user) => `<button type="button" class="moderation-suggestion" role="option" data-moderation-user-id="${escapeHtml(user.id)}" data-moderation-username="${escapeHtml(user.username)}"><span class="moderation-suggestion-copy"><strong>@${escapeHtml(user.username)}</strong><small>${escapeHtml(user.displayName)} · ID ${escapeHtml(user.id)}</small></span></button>`).join("");
+        list.hidden = false;
+      } catch (error) {
+        if (sequence !== searchSequence) return;
+        list.innerHTML = `<div class="moderation-empty-logs">${escapeHtml(error.message)}</div>`;
+        list.hidden = false;
+      }
+    }, 250);
+  });
+  list.addEventListener("click", (event) => {
+    const option = event.target.closest?.("[data-moderation-user-id]");
+    if (!option) return;
+    input.value = option.dataset.moderationUsername;
+    list.hidden = true;
+    void loadModerationUser(option.dataset.moderationUserId);
+  });
+  document.addEventListener("click", (event) => {
+    if (!input.contains(event.target) && !list.contains(event.target)) list.hidden = true;
+  });
+}
+
+async function openModerationPanel() {
+  const shell = $("#moderation-panel-shell");
+  if (!shell || !currentUser?.moderationAccess) return;
+  shell.hidden = false;
+  $("#moderation-open-panel").hidden = true;
+  $("#moderation-greeting").textContent = `Hey, ${currentUser.robloxUsername || "moderator"}!`;
+  $("#moderation-staff-username").textContent = currentUser.robloxUsername || "Verified Roblox account";
+  const initials = (currentUser.robloxUsername || "NY").slice(0, 2).toUpperCase();
+  $("#moderation-staff-avatar").textContent = initials;
+  try {
+    moderationShift = await requestJson("/api/moderation/shift");
+    updateModerationShiftUI();
+  } catch (error) {
+    showToast(error.message);
+  }
+  clearInterval(moderationShiftTimer);
+  moderationShiftTimer = window.setInterval(updateModerationShiftUI, 10_000);
 }
 
 function loadGuestData() {
@@ -511,6 +667,8 @@ function updateProfileUI() {
   setText("#neighborhood-caption", profile.neighborhood);
   setText("#sidebar-name", currentUser?.displayName || currentUser?.username || profile.name);
   setText("#sidebar-role", currentUser?.seniorHighRanking ? "Senior High Ranking" : currentUser ? "Connected · Civilian" : "Civilian · New York");
+  const moderationNav = $("#moderation-nav-section");
+  if (moderationNav) moderationNav.hidden = !currentUser?.moderationAccess;
   updateResidentAvatar();
 
   const boroughDescriptions = {
@@ -1351,6 +1509,75 @@ async function initialize() {
   }
   updateProfileUI();
   if (currentUser) await loadDepartments();
+  bindModerationAutocomplete("#moderation-user-search", "#moderation-user-suggestions");
+  bindModerationAutocomplete("#moderation-logs-search", "#moderation-log-suggestions");
+  $("#moderation-open-panel").addEventListener("click", openModerationPanel);
+  $("#moderation-type").addEventListener("change", (event) => {
+    const enabled = event.target.value === "Ban Bolo";
+    $("#moderation-evidence-fields").hidden = !enabled;
+    $("#moderation-evidence-description").required = enabled;
+    $("#moderation-evidence-url").required = enabled;
+  });
+  $("#moderation-shift-button").addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    const action = moderationShift.activeShift ? "end" : "start";
+    try {
+      const result = await requestJson("/api/moderation/shift", { method: "POST", body: JSON.stringify({ action }) });
+      moderationShift = result.shift;
+      updateModerationShiftUI();
+      showToast(action === "start" ? "Moderation shift started." : `Moderation shift ended (${result.minutesAdded} minutes).`);
+    } catch (error) {
+      showToast(error.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
+  $("#moderation-log-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const message = $("#moderation-form-message");
+    const submit = $("#moderation-submit");
+    const robloxId = $("#moderation-user-id").value;
+    if (!robloxId || !selectedModerationUser) {
+      message.textContent = "Choose a Roblox account from the suggestions first.";
+      message.classList.add("is-error");
+      return;
+    }
+    message.textContent = "";
+    message.classList.remove("is-error");
+    submit.disabled = true;
+    try {
+      const result = await requestJson("/api/moderation/logs", {
+        method: "POST",
+        body: JSON.stringify({
+          robloxId,
+          type: $("#moderation-type").value,
+          reason: $("#moderation-reason").value,
+          evidenceDescription: $("#moderation-evidence-description").value,
+          evidenceUrl: $("#moderation-evidence-url").value
+        })
+      });
+      message.textContent = result.log?.status === "enforced"
+        ? "Ban Bolo approved and issued by ER:LC."
+        : "Moderation log saved.";
+      $("#moderation-log-form").reset();
+      $("#moderation-user-search").value = selectedModerationUser.username;
+      $("#moderation-user-id").value = selectedModerationUser.id;
+      $("#moderation-selected-user").textContent = `Selected @${selectedModerationUser.username} · Roblox ID ${selectedModerationUser.id}`;
+      $("#moderation-evidence-fields").hidden = true;
+      $("#moderation-evidence-description").required = false;
+      $("#moderation-evidence-url").required = false;
+      await loadModerationUser(selectedModerationUser.id);
+      showToast(message.textContent);
+    } catch (error) {
+      message.textContent = error.message;
+      message.classList.add("is-error");
+      if (selectedModerationUser) await loadModerationUser(selectedModerationUser.id);
+      showToast(error.message);
+    } finally {
+      submit.disabled = false;
+    }
+  });
 
   $("#profile-form").addEventListener("submit", async (event) => {
     event.preventDefault();

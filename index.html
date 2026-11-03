@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css?v=1.0.34">
+    <link rel="stylesheet" href="/styles.css?v=1.0.35">
   </head>
   <body>
     <div class="app-shell">
@@ -39,6 +39,13 @@
           <nav aria-label="Law enforcement tools">
             <a class="nav-link" href="#leo" data-route="leo"><span class="nav-icon">▣</span>MDT</a>
             <a class="nav-link" href="#bolos" data-route="bolos"><span class="nav-icon">⚑</span>BOLOs</a>
+          </nav>
+        </div>
+
+        <div class="nav-section moderation-nav-section" id="moderation-nav-section" hidden>
+          <span class="nav-label">MODERATION</span>
+          <nav aria-label="Moderation">
+            <a class="nav-link" href="#moderation" data-route="moderation"><span class="nav-icon">⚑</span>Moderation</a>
           </nav>
         </div>
 
@@ -283,6 +290,69 @@
           <section class="route-page" data-page="leo"><div class="page-heading"><div><div class="eyebrow"><span>LAW ENFORCEMENT</span><i></i><span>MOBILE DATA TERMINAL</span></div><h1>Police MDT<span class="heading-period">.</span></h1><p class="heading-subtitle">Search vehicle registrations and resident records.</p></div></div><section class="content-panel leo-panel"><div class="panel-heading"><div class="panel-title"><span class="panel-icon">▣</span><div><h2>Records lookup</h2><p>Search by license plate, Roblox username, or CAD name.</p></div></div></div><form id="leo-search-form" class="leo-search"><select name="type"><option value="plate">License plate</option><option value="roblox">Roblox username</option><option value="cad">CAD name</option></select><input name="query" required placeholder="Enter search details"><button class="button button-primary">Search records →</button></form><div id="leo-results" class="leo-results"><div class="department-empty">Enter a search above to query available CAD records.</div></div></section></section>
           <section class="route-page" data-page="bolos"><div class="page-heading"><div><div class="eyebrow"><span>LAW ENFORCEMENT</span><i></i><span>BE ON THE LOOKOUT</span></div><h1>BOLOs<span class="heading-period">.</span></h1><p class="heading-subtitle">Create and review vehicle and person alerts.</p></div></div><div class="leo-action-row"><button class="button button-primary" data-leo-action="vehicle-bolo">＋ Vehicle BOLO</button><button class="button button-outline" data-leo-action="person-bolo">＋ Person BOLO</button></div><section class="content-panel"><div id="bolo-list" class="leo-results"></div></section></section>
           <dialog id="leo-modal" class="leo-modal"><div id="leo-modal-content"></div></dialog>
+
+          <section class="route-page moderation-page" data-page="moderation" id="moderation-page">
+            <div class="page-heading">
+              <div><div class="eyebrow"><span>STAFF TOOLS</span><i></i><span>RESTRICTED ACCESS</span></div><h1>Moderation<span class="heading-period">.</span></h1><p class="heading-subtitle">Manage shifts and review resident punishment records.</p></div>
+              <button class="button button-primary" id="moderation-open-panel" type="button">Open Moderation Panel <span>→</span></button>
+            </div>
+            <div id="moderation-panel-shell" hidden>
+              <div class="moderation-grid">
+                <aside class="moderation-column moderation-staff-column">
+                  <section class="moderation-card moderation-staff-card">
+                    <div class="moderation-staff-heading"><div class="moderation-avatar" id="moderation-staff-avatar">NY</div><div><strong id="moderation-greeting">Hey, moderator!</strong><small id="moderation-staff-username">Verified Roblox account</small></div></div>
+                    <span class="moderation-shift-state" id="moderation-shift-state">OFF SHIFT</span>
+                    <strong class="moderation-shift-time" id="moderation-shift-time">0h 0m</strong>
+                    <button class="button button-primary moderation-shift-button" id="moderation-shift-button" type="button">Start Shift</button>
+                  </section>
+                  <section class="moderation-card moderation-target-card" id="moderation-target-card">
+                    <div class="moderation-empty-target">Search for a Roblox username to view their public profile and moderation history.</div>
+                  </section>
+                  <section class="moderation-card moderation-toolbox">
+                    <div class="moderation-toolbox-heading"><h2>Toolbox</h2><span aria-hidden="true">⚙</span></div>
+                    <div class="moderation-toolbox-grid"><span class="moderation-tool moderation-tool-green">Moderation records</span><span class="moderation-tool moderation-tool-blue">Roblox lookup</span><span class="moderation-tool moderation-tool-orange">Shift tracking</span></div>
+                  </section>
+                </aside>
+
+                <section class="moderation-column moderation-form-column">
+                  <form class="moderation-card moderation-log-form" id="moderation-log-form">
+                    <div class="moderation-column-heading"><h2>Create New Log</h2><p>All entries are stored in the shared moderation record.</p></div>
+                    <label class="moderation-field">User <span>*</span>
+                      <input id="moderation-user-search" type="search" autocomplete="off" placeholder="Enter Roblox username" required aria-autocomplete="list" aria-controls="moderation-user-suggestions">
+                      <div class="moderation-suggestions" id="moderation-user-suggestions" role="listbox" hidden></div>
+                    </label>
+                    <div class="moderation-selected-user" id="moderation-selected-user">Choose a username from the Roblox suggestions.</div>
+                    <input type="hidden" id="moderation-user-id">
+                    <label class="moderation-field">Type <span>*</span>
+                      <select id="moderation-type" required>
+                        <option value="">Select a punishment type</option><option>Warning</option><option>Kick</option><option>Ban</option><option>Ban Bolo</option><option>Note</option>
+                      </select>
+                    </label>
+                    <label class="moderation-field">Reason <span>*</span><textarea id="moderation-reason" rows="4" minlength="8" maxlength="500" required placeholder="Explain the rule violation and why this action is appropriate."></textarea></label>
+                    <div class="moderation-evidence-fields" id="moderation-evidence-fields" hidden>
+                      <label class="moderation-field">Evidence description <span>*</span><textarea id="moderation-evidence-description" rows="3" maxlength="2000" placeholder="Describe what the proof shows and how it supports the reason."></textarea></label>
+                      <label class="moderation-field">Proof image URL <span>*</span><input id="moderation-evidence-url" type="url" maxlength="2000" placeholder="https://cdn.discordapp.com/..."></label>
+                      <small>Ban Bolo is reviewed by AWS Bedrock and is sent to ER:LC only after a clear approval. Proof must be a public PNG, JPEG, or WebP image hosted on an approved domain.</small>
+                    </div>
+                    <p class="moderation-form-message" id="moderation-form-message" role="status" aria-live="polite"></p>
+                    <button class="button button-primary moderation-submit" id="moderation-submit" type="submit">Create Log</button>
+                  </form>
+                </section>
+
+                <section class="moderation-column moderation-logs-column">
+                  <div class="moderation-card moderation-logs-card">
+                    <div class="moderation-column-heading"><h2>Punishment Logs</h2><p>Search Roblox users to open their saved history.</p></div>
+                    <label class="moderation-field moderation-log-search-label"><span class="visually-hidden">Search punishment logs by Roblox username</span>
+                      <input id="moderation-logs-search" type="search" autocomplete="off" placeholder="Search by Roblox username" aria-autocomplete="list" aria-controls="moderation-log-suggestions">
+                      <div class="moderation-suggestions" id="moderation-log-suggestions" role="listbox" hidden></div>
+                    </label>
+                    <div class="moderation-logs-list" id="moderation-logs-list"><div class="moderation-empty-logs">Select a Roblox username to see their moderation history.</div></div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </section>
+
           <section class="route-page department-page" data-page="department" id="department-page"><div id="department-content"></div></section>
 
           <section class="route-page admin-page" data-page="admin" id="admin-page">
@@ -301,7 +371,7 @@
             </div>
           </section>
 
-          <footer class="page-footer"><span>NYC ROLEPLAY PORTAL</span><span>BUILT FOR THE CITY THAT NEVER SLEEPS <i>✦</i></span><span>v1.0.33</span></footer>
+          <footer class="page-footer"><span>NYC ROLEPLAY PORTAL</span><span>BUILT FOR THE CITY THAT NEVER SLEEPS <i>✦</i></span><span>v1.0.34</span></footer>
         </div>
       </main>
     </div>
@@ -352,6 +422,6 @@
         <div class="connect-foot"><span>PRIVATE BY DEFAULT</span><i>·</i><span>ROLEPLAY ONLY</span><i>·</i><span>MADE FOR NYC</span></div>
       </form>
     </dialog>
-  <script src="/app.js?v=1.0.33"></script>
+  <script src="/app.js?v=1.0.34"></script>
   </body>
 </html>
