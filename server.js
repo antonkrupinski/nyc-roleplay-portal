@@ -1109,7 +1109,14 @@ function checkOrigin(request, url) {
   const origin = request.headers.origin;
   if (!origin) return true;
   try {
-    return new URL(origin).host === url.host;
+    const parsedOrigin = new URL(origin);
+    if (!["http:", "https:"].includes(parsedOrigin.protocol) || parsedOrigin.username || parsedOrigin.password) return false;
+    const allowedHosts = new Set([url.host.toLowerCase()]);
+    if (process.env.VERCEL && typeof request.headers["x-forwarded-host"] === "string") {
+      const forwardedHost = request.headers["x-forwarded-host"].split(",")[0].trim().toLowerCase();
+      if (forwardedHost) allowedHosts.add(forwardedHost);
+    }
+    return allowedHosts.has(parsedOrigin.host.toLowerCase());
   } catch {
     return false;
   }
@@ -2223,4 +2230,4 @@ if (require.main === module) {
   startDepartmentResetTimer();
 }
 
-module.exports = { handleRequest, server, startServer };
+module.exports = { checkOrigin, handleRequest, server, startServer };
