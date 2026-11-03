@@ -1007,15 +1007,6 @@ input, select, textarea { background: #0d0d10; border-color: #303036; color: #f4
 .moderation-profile-details dt { color: #8d929a; font-size: 11px; }
 .moderation-profile-details dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: #e0e1e4; font-size: 11px; }
 .moderation-profile-description { margin: 12px 0 0; color: #a0a3aa; font-size: 11px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
-.moderation-toolbox { margin-top: auto; }
-.moderation-toolbox-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.moderation-toolbox-heading h2 { margin: 0; font-size: 14px; }
-.moderation-toolbox-heading span { color: #9699a1; }
-.moderation-toolbox-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
-.moderation-tool { display: grid; min-height: 34px; place-items: center; border-radius: 999px; color: #fff; font-size: 10px; font-weight: 700; text-align: center; }
-.moderation-tool-green { background: #2e9f7d; }
-.moderation-tool-blue { background: #4a68d8; }
-.moderation-tool-orange { background: #e96d23; }
 .moderation-column-heading { margin-bottom: 16px; }
 .moderation-column-heading h2 { margin: 0; font-size: 16px; }
 .moderation-column-heading p { margin: 6px 0 0; color: #8e929a; font-size: 11px; line-height: 1.45; }
@@ -1081,7 +1072,6 @@ input, select, textarea { background: #0d0d10; border-color: #303036; color: #f4
   .moderation-grid { grid-template-columns: minmax(0,1fr); }
   .moderation-column + .moderation-column { border-top: 1px solid #36383d; border-left: 0; }
   .moderation-logs-column { grid-column: auto; }
-  .moderation-toolbox { margin-top: 0; }
 }
 
 .route-page[data-page="vehicles"] .page-heading,
@@ -1351,6 +1341,132 @@ body:is([data-page="applications"], [data-page="apply"]) .page-content {
 body[data-page="applications"] .application-builder-grid { grid-template-columns: minmax(0,1.35fr) minmax(320px,.65fr); }
 body[data-page="apply"] #public-application-page { max-width: 1120px; margin: 0 auto; }
 body[data-page="apply"] .public-application-form { max-width: none; }
+
+/* Refined moderation workspace */
+.moderation-page > .page-heading { margin-bottom: 22px; }
+.moderation-page > .page-heading .eyebrow { color: #8ba9a4; }
+.moderation-page > .page-heading .heading-subtitle { max-width: 560px; }
+.moderation-grid {
+  grid-template-columns: minmax(230px,.78fr) minmax(300px,1fr) minmax(320px,1.08fr);
+  min-height: 0;
+  gap: 16px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.moderation-column { padding: 0; }
+.moderation-column + .moderation-column { border: 0; }
+.moderation-staff-column { gap: 16px; }
+.moderation-card {
+  padding: 20px;
+  border-color: #29333a;
+  border-radius: 16px;
+  background: linear-gradient(150deg,#151b20 0%,#101418 72%);
+  box-shadow: 0 16px 38px rgba(0,0,0,.2), inset 0 1px rgba(255,255,255,.025);
+}
+.moderation-card-kicker {
+  color: #87a59e;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .16em;
+}
+.moderation-staff-card { gap: 18px; }
+.moderation-staff-heading { gap: 13px; }
+.moderation-avatar {
+  width: 48px;
+  height: 48px;
+  border-color: #426157;
+  background: linear-gradient(145deg,#29483f,#182c27);
+  color: #c3e4d7;
+  box-shadow: 0 0 0 4px rgba(83,145,121,.08);
+}
+.moderation-staff-heading > div:last-child { gap: 5px; }
+.moderation-staff-heading strong { color: #f0f3f2; font-size: 16px; }
+.moderation-staff-heading small { color: #99a6a4; }
+.moderation-shift-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid rgba(133,167,155,.16);
+  border-radius: 12px;
+  background: rgba(5,10,10,.34);
+}
+.moderation-shift-state { padding: 6px 9px; border-color: #3a4544; color: #a4afac; font-size: 9px; }
+.moderation-shift-state::before { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: #75817e; content: ""; vertical-align: 1px; }
+.moderation-shift-state.is-active { border-color: rgba(92,190,151,.32); background: rgba(30,93,68,.22); color: #a6e2c6; }
+.moderation-shift-state.is-active::before { background: #63d19e; box-shadow: 0 0 10px rgba(99,209,158,.55); }
+.moderation-shift-time { color: #f0f4f2; font-size: 22px; letter-spacing: -.03em; }
+.moderation-shift-button, .moderation-submit { min-height: 42px; border-radius: 10px; }
+.moderation-target-card { min-height: 170px; }
+.moderation-target-card-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.moderation-target-icon { color: #8cb4a7; font-size: 19px; line-height: 1; }
+.moderation-empty-target { padding: 16px; border: 1px dashed #34413f; border-radius: 11px; color: #9daaa6; background: rgba(5,10,10,.2); }
+.moderation-target-heading { gap: 13px; }
+.moderation-target-avatar { border-radius: 14px; }
+.moderation-target-title strong { color: #f0f3f2; }
+.moderation-target-title small { color: #96a39f; }
+.moderation-profile-actions a { border-color: #35423f; color: #c1d3cd; background: rgba(255,255,255,.02); transition: border-color .16s,background .16s; }
+.moderation-profile-actions a:hover { border-color: #668d7e; background: rgba(94,145,122,.1); }
+.moderation-profile-details div { grid-template-columns: 96px minmax(0,1fr); }
+.moderation-profile-details dt { color: #85938f; }
+.moderation-profile-details dd { color: #d7e0dc; }
+.moderation-profile-description { color: #aab5b1; }
+.moderation-column-heading { margin-bottom: 20px; }
+.moderation-column-heading h2 { margin-top: 7px; color: #f0f3f2; font-size: 20px; letter-spacing: -.025em; }
+.moderation-column-heading p { max-width: 42ch; margin-top: 7px; color: #99a6a2; font-size: 11px; line-height: 1.6; }
+.moderation-log-form { gap: 17px; height: auto; }
+.moderation-field { gap: 8px; color: #d8e0dd; font-size: 11px; }
+.moderation-field > span { color: #df9c93; }
+.moderation-field input, .moderation-field select, .moderation-field textarea {
+  min-height: 42px;
+  padding: 11px 12px;
+  border-color: #34403e;
+  border-radius: 10px;
+  background: #0c1112;
+  color: #edf2ef;
+  font: inherit;
+  transition: border-color .16s,box-shadow .16s,background .16s;
+}
+.moderation-field textarea { min-height: 105px; }
+.moderation-field input:focus, .moderation-field select:focus, .moderation-field textarea:focus {
+  border-color: #78a897;
+  outline: 0;
+  background: #101716;
+  box-shadow: 0 0 0 3px rgba(120,168,151,.13);
+}
+.moderation-selected-user { color: #95a29e; }
+.moderation-suggestions { border-color: #3b4b46; border-radius: 11px; background: #131a18; }
+.moderation-suggestion { color: #e3ebe7; }
+.moderation-suggestion + .moderation-suggestion { border-color: #28332f; }
+.moderation-suggestion:hover { background: #202c27; }
+.moderation-evidence-fields { padding: 15px; border-color: #384843; border-radius: 12px; background: rgba(7,12,12,.5); }
+.moderation-evidence-fields > small { color: #9aa8a3; line-height: 1.6; }
+.moderation-form-message { color: #a8dfc7; }
+.moderation-form-message.is-error { color: #efa8a1; }
+.moderation-logs-card { min-height: 100%; }
+.moderation-log-search-label { margin-bottom: 18px; }
+.moderation-logs-list { gap: 11px; }
+.moderation-log-entry { padding: 15px; border-color: #303b38; border-radius: 12px; background: rgba(7,12,12,.48); }
+.moderation-log-entry-head strong { color: #eaf0ed; font-size: 12px; }
+.moderation-log-entry-head small, .moderation-log-meta { color: #98a49f; }
+.moderation-log-status { color: #9ed8bb; }
+.moderation-log-entry p { color: #c7d1cc; line-height: 1.65; }
+.moderation-log-entry a { color: #9bcbb7; }
+.moderation-log-ai { border-color: #2c3733; color: #b7c3bd; line-height: 1.6; }
+.moderation-empty-logs { padding: 32px 18px; border: 1px dashed #34413d; border-radius: 12px; color: #a1ada8; }
+@media (max-width: 1240px) {
+  .moderation-grid { grid-template-columns: minmax(230px,.82fr) minmax(0,1.18fr); }
+  .moderation-logs-column { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .moderation-page > .page-heading { align-items: flex-start; }
+  .moderation-grid { grid-template-columns: minmax(0,1fr); gap: 13px; }
+  .moderation-logs-column { grid-column: auto; }
+  .moderation-card { padding: 17px; }
+}
 @media (max-width: 850px) {
   body[data-page="applications"] .application-builder-grid { grid-template-columns: minmax(0,1fr); }
 }

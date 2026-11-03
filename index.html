@@ -342,23 +342,19 @@
               <div class="moderation-grid">
                 <aside class="moderation-column moderation-staff-column">
                   <section class="moderation-card moderation-staff-card">
-                    <div class="moderation-staff-heading"><div class="moderation-avatar" id="moderation-staff-avatar">NY</div><div><strong id="moderation-greeting">Hey, moderator!</strong><small id="moderation-staff-username">Verified Roblox account</small></div></div>
-                    <span class="moderation-shift-state" id="moderation-shift-state">OFF SHIFT</span>
-                    <strong class="moderation-shift-time" id="moderation-shift-time">0h 0m</strong>
+                    <div class="moderation-staff-heading"><div class="moderation-avatar" id="moderation-staff-avatar">NY</div><div><span class="moderation-card-kicker">STAFF SESSION</span><strong id="moderation-greeting">Hey, moderator!</strong><small id="moderation-staff-username">Verified Roblox account</small></div></div>
+                    <div class="moderation-shift-summary"><span class="moderation-shift-state" id="moderation-shift-state">OFF SHIFT</span><strong class="moderation-shift-time" id="moderation-shift-time">0h 0m</strong></div>
                     <button class="button button-primary moderation-shift-button" id="moderation-shift-button" type="button">Start Shift</button>
                   </section>
                   <section class="moderation-card moderation-target-card" id="moderation-target-card">
+                    <div class="moderation-target-card-heading"><span class="moderation-card-kicker">RESIDENT PROFILE</span><span class="moderation-target-icon" aria-hidden="true">◎</span></div>
                     <div class="moderation-empty-target">Search for a Roblox username to view their public profile and moderation history.</div>
-                  </section>
-                  <section class="moderation-card moderation-toolbox">
-                    <div class="moderation-toolbox-heading"><h2>Toolbox</h2><span aria-hidden="true">⚙</span></div>
-                    <div class="moderation-toolbox-grid"><span class="moderation-tool moderation-tool-green">Moderation records</span><span class="moderation-tool moderation-tool-blue">Roblox lookup</span><span class="moderation-tool moderation-tool-orange">Shift tracking</span></div>
                   </section>
                 </aside>
 
                 <section class="moderation-column moderation-form-column">
                   <form class="moderation-card moderation-log-form" id="moderation-log-form">
-                    <div class="moderation-column-heading"><h2>Create New Log</h2><p>All entries are stored in the shared moderation record.</p></div>
+                    <div class="moderation-column-heading"><span class="moderation-card-kicker">DOCUMENT AN ACTION</span><h2>Create a log</h2><p>Write a clear, factual record. Entries are saved to the shared moderation history.</p></div>
                     <label class="moderation-field">User <span>*</span>
                       <input id="moderation-user-search" type="search" autocomplete="off" placeholder="Enter Roblox username" required aria-autocomplete="list" aria-controls="moderation-user-suggestions">
                       <div class="moderation-suggestions" id="moderation-user-suggestions" role="listbox" hidden></div>
@@ -383,7 +379,7 @@
 
                 <section class="moderation-column moderation-logs-column">
                   <div class="moderation-card moderation-logs-card">
-                    <div class="moderation-column-heading"><h2>Punishment Logs</h2><p>Search Roblox users to open their saved history.</p></div>
+                    <div class="moderation-column-heading"><span class="moderation-card-kicker">RECORDS &amp; HISTORY</span><h2>Punishment logs</h2><p>Search a Roblox account to review its saved moderation history.</p></div>
                     <label class="moderation-field moderation-log-search-label"><span class="visually-hidden">Search punishment logs by Roblox username</span>
                       <input id="moderation-logs-search" type="search" autocomplete="off" placeholder="Search by Roblox username" aria-autocomplete="list" aria-controls="moderation-log-suggestions">
                       <div class="moderation-suggestions" id="moderation-log-suggestions" role="listbox" hidden></div>
