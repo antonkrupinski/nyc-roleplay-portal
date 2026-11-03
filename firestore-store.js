@@ -321,6 +321,7 @@ async function createApplicationForm(form) {
   const record = {
     ...form,
     publicId: crypto.randomBytes(24).toString("base64url"),
+    isActive: true,
     createdAt: new Date().toISOString()
   };
   await db.collection("applicationForms").doc(id).set(record);
@@ -329,14 +330,43 @@ async function createApplicationForm(form) {
 
 async function getApplicationForms() {
   const snapshot = await getFirestore().collection("applicationForms").orderBy("createdAt", "desc").limit(100).get();
-  return snapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
+  return snapshot.docs
+    .map((document) => ({ id: document.id, ...document.data() }))
+    .filter((form) => form.isActive !== false);
+}
+
+async function updateApplicationForm(id, form) {
+  const ref = getFirestore().collection("applicationForms").doc(String(id));
+  return getFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists || snapshot.get("isActive") === false) return null;
+    const updates = {
+      title: form.title,
+      description: form.description,
+      questions: form.questions,
+      updatedAt: new Date().toISOString()
+    };
+    transaction.update(ref, updates);
+    return { id: snapshot.id, ...snapshot.data(), ...updates };
+  });
+}
+
+async function archiveApplicationForm(id) {
+  const ref = getFirestore().collection("applicationForms").doc(String(id));
+  return getFirestore().runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists || snapshot.get("isActive") === false) return false;
+    transaction.update(ref, { isActive: false, deletedAt: new Date().toISOString() });
+    return true;
+  });
 }
 
 async function getPublicApplicationForm(publicId) {
   const snapshot = await getFirestore().collection("applicationForms").where("publicId", "==", String(publicId)).limit(1).get();
   if (snapshot.empty) return null;
   const document = snapshot.docs[0];
-  return { id: document.id, ...document.data() };
+  const form = { id: document.id, ...document.data() };
+  return form.isActive === false ? null : form;
 }
 
 async function createApplicationSubmission(form, applicant, answers) {
@@ -345,7 +375,7 @@ async function createApplicationSubmission(form, applicant, answers) {
   const ref = db.collection("applicationSubmissions").doc(id);
   return db.runTransaction(async (transaction) => {
     const [formSnapshot, submissionSnapshot] = await Promise.all([transaction.get(db.collection("applicationForms").doc(form.id)), transaction.get(ref)]);
-    if (!formSnapshot.exists || formSnapshot.get("publicId") !== form.publicId) return { error: "application_unavailable" };
+    if (!formSnapshot.exists || formSnapshot.get("publicId") !== form.publicId || formSnapshot.get("isActive") === false) return { error: "application_unavailable" };
     if (submissionSnapshot.exists) return { error: "already_applied" };
     const submission = {
       formId: form.id,
@@ -426,12 +456,14 @@ async function reviewApplicationSubmission(id, outcome) {
 
 module.exports = {
   createVerificationRequest,
+  archiveApplicationForm,
   createApplicationForm,
   createApplicationSubmission,
   createModerationLog,
   deleteProfileRecord,
   enqueueErlcVoiceCommand,
   getApplicationForms,
+  updateApplicationForm,
   getApplicationSubmission,
   getFirestore,
   getPublicApplicationForm,

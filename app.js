@@ -41,6 +41,8 @@ let vehicles = SAMPLE_VEHICLES.map((vehicle) => ({ ...vehicle }));
 let portfolio = { balance: 3325, holdings: [], transactions: [] };
 let marketData = null;
 let currentUser = null;
+let editingApplicationFormId = "";
+let applicationForms = [];
 let vehicleSyncStatus = "loading";
 let vehicleRobloxUsername = "";
 let residentAvatarImage = null;
@@ -126,19 +128,120 @@ function applicationPublicIdFromPath() {
   return match ? match[1] : "";
 }
 
+function applicationQuestionRowTemplate(number) {
+  return `<article class="application-question-row" data-application-question>
+    <div class="application-question-row-heading"><span data-question-number>QUESTION ${number}</span><button class="application-remove-question" type="button" data-remove-question aria-label="Remove question ${number}">Remove</button></div>
+    <label class="application-field"><span>Question text</span><input data-question-text maxlength="160" required placeholder="Enter a clear question"></label>
+    <label class="application-field"><span>Response type</span><select data-question-type>
+      <option value="short">Short answer</option><option value="long">Long answer</option>
+      <option value="multiple_choice">Multiple choice</option><option value="dropdown">Dropdown</option>
+      <option value="checkboxes">Checkboxes</option><option value="rating">Rating · 1 to 10</option>
+      <option value="file">File upload</option>
+    </select></label>
+    <label class="application-field application-question-options" data-question-options-field hidden><span>Options <small>Enter one choice per line (2–20).</small></span><textarea data-question-options rows="3" placeholder="Option one&#10;Option two"></textarea></label>
+    <div class="application-question-row-footer"><label class="application-required"><input data-question-required type="checkbox" checked> Required question</label><span data-question-type-hint>Short text response · up to 250 characters</span></div>
+  </article>`;
+}
+
+async function applicationFilePayload(file) {
+  const contentTypes = {
+    pdf: "application/pdf",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    txt: "text/plain"
+  };
+  const extension = file.name.split(".").pop().toLowerCase();
+  const type = file.type || contentTypes[extension];
+  if (!contentTypes[extension] || type !== contentTypes[extension]) {
+    throw new Error("Choose a PDF, DOCX, JPG, PNG, or TXT file.");
+  }
+  if (file.size > 512 * 1024) throw new Error("Uploaded files together must be 512 KB or smaller.");
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return { name: file.name, type, size: bytes.length, data: btoa(binary) };
+}
+
+function refreshApplicationQuestionRows() {
+  const rows = Array.from($("#application-question-list").querySelectorAll("[data-application-question]"));
+  rows.forEach((row, index) => {
+    const number = index + 1;
+    row.querySelector("[data-question-number]").textContent = `QUESTION ${String(number).padStart(2, "0")}`;
+    row.querySelector("[data-remove-question]").setAttribute("aria-label", `Remove question ${number}`);
+    const type = row.querySelector("[data-question-type]").value;
+    const choices = ["multiple_choice", "dropdown", "checkboxes"].includes(type);
+    const optionsField = row.querySelector("[data-question-options-field]");
+    const options = row.querySelector("[data-question-options]");
+    optionsField.hidden = !choices;
+    options.required = choices;
+    row.querySelector("[data-question-type-hint]").textContent = ({
+      short: "Short text response · up to 250 characters",
+      long: "Long text response · up to 900 characters",
+      multiple_choice: "Select one answer from a list",
+      dropdown: "Select one answer from a compact menu",
+      checkboxes: "Select one or more answers",
+      rating: "Select a rating from 1 to 10",
+      file: "One PDF, DOCX, JPG, PNG, or TXT · up to 10 files, 512 KB total"
+    })[type];
+  });
+  $("#application-question-count").textContent = `${rows.length} / 20`;
+  $("#application-add-question").disabled = rows.length >= 20;
+}
+
+function resetApplicationEditor() {
+  const formElement = $("#application-builder-form");
+  formElement.reset();
+  $("#application-title").value = "";
+  $("#application-description").value = "";
+  $("#application-question-list").innerHTML = applicationQuestionRowTemplate(1);
+  editingApplicationFormId = "";
+  $("#application-publish").innerHTML = 'Publish <span>↗</span>';
+  $("#application-cancel-edit").hidden = true;
+  refreshApplicationQuestionRows();
+}
+
+function editApplicationForm(form) {
+  editingApplicationFormId = form.id;
+  $("#application-title").value = form.title || "";
+  $("#application-description").value = form.description || "";
+  const questions = Array.isArray(form.questions) ? form.questions : [];
+  $("#application-question-list").innerHTML = questions.map((question, index) => applicationQuestionRowTemplate(index + 1)).join("");
+  Array.from($("#application-question-list").querySelectorAll("[data-application-question]")).forEach((row, index) => {
+    const question = questions[index];
+    row.querySelector("[data-question-text]").value = question.text || "";
+    row.querySelector("[data-question-type]").value = question.type || "short";
+    row.querySelector("[data-question-options]").value = (question.options || []).join("\n");
+    row.querySelector("[data-question-required]").checked = question.required !== false;
+  });
+  $("#application-publish").innerHTML = 'Save changes <span>✓</span>';
+  $("#application-cancel-edit").hidden = false;
+  $("#application-builder-message").textContent = `Editing “${form.title}”. Existing submissions will keep their original questions and answers.`;
+  $("#application-builder-message").classList.remove("is-error");
+  refreshApplicationQuestionRows();
+  $("#application-builder-form").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 async function loadApplicationForms() {
   const list = $("#application-forms-list");
   if (!list) return;
   try {
     const data = await requestJson("/api/applications/manage/forms");
     const forms = Array.isArray(data.forms) ? data.forms : [];
+    applicationForms = forms;
     list.innerHTML = forms.length
       ? forms.map((form) => {
         const url = new URL("/apply/" + encodeURIComponent(form.publicId), window.location.origin).toString();
-        return `<article class="application-form-item"><strong>${escapeHtml(form.title)}</strong><small>${(form.questions || []).length} questions · ${new Date(form.createdAt).toLocaleDateString()}</small><a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(url)}</a><div class="application-form-actions"><button class="button button-outline" type="button" data-copy-application="${escapeHtml(url)}">Copy link</button></div></article>`;
+        const updated = form.updatedAt ? ` · Updated ${new Date(form.updatedAt).toLocaleDateString()}` : "";
+        return `<article class="application-form-item"><strong>${escapeHtml(form.title)}</strong><small>${(form.questions || []).length} questions · Published ${new Date(form.createdAt).toLocaleDateString()}${updated}</small><a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(url)}</a><div class="application-form-actions"><button class="button button-outline" type="button" data-edit-application="${escapeHtml(form.id)}">Edit</button><button class="button button-outline" type="button" data-copy-application="${escapeHtml(url)}">Copy link</button><button class="button button-quiet application-delete-button" type="button" data-delete-application="${escapeHtml(form.id)}">Delete</button></div></article>`;
       }).join("")
       : '<div class="department-empty">No published applications yet.</div>';
   } catch (error) {
+    applicationForms = [];
     list.innerHTML = `<div class="department-empty">${escapeHtml(error.message)}</div>`;
   }
 }
@@ -159,13 +262,32 @@ async function loadPublicApplication() {
     const form = data.form;
     setText("#public-application-title", form.title);
     setText("#public-application-description", form.description || "Complete each required question and submit your application.");
-    questions.innerHTML = (form.questions || []).map((question) => {
+    questions.innerHTML = (form.questions || []).map((question, index) => {
       const id = "application-answer-" + question.id;
-      const requiredLabel = question.required ? '<span aria-hidden="true"> *</span>' : '<span> (optional)</span>';
-      const input = question.type === "long"
-        ? `<textarea id="${escapeHtml(id)}" name="${escapeHtml(question.id)}" maxlength="900" ${question.required ? "required" : ""}></textarea>`
-        : `<input id="${escapeHtml(id)}" name="${escapeHtml(question.id)}" maxlength="250" ${question.required ? "required" : ""}>`;
-      return `<div class="public-application-question"><label for="${escapeHtml(id)}">${escapeHtml(question.text)}${requiredLabel}</label>${input}</div>`;
+      const questionId = escapeHtml(question.id);
+      const requiredLabel = question.required ? '<span aria-hidden="true"> *</span>' : '<span class="application-optional">Optional</span>';
+      const choices = (question.options || []).map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("");
+      let control;
+      if (question.type === "long") {
+        control = `<textarea id="${escapeHtml(id)}" name="${questionId}" maxlength="900" ${question.required ? "required" : ""}></textarea>`;
+      } else if (question.type === "multiple_choice") {
+        control = `<div class="application-choice-list">${(question.options || []).map((option, index) => `<label class="application-choice"><input type="radio" name="${questionId}" value="${escapeHtml(option)}" ${question.required && index === 0 ? "required" : ""}><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
+      } else if (question.type === "dropdown") {
+        control = `<select id="${escapeHtml(id)}" name="${questionId}" ${question.required ? "required" : ""}><option value="">Choose an option</option>${choices}</select>`;
+      } else if (question.type === "checkboxes") {
+        control = `<div class="application-choice-list" data-checkbox-group="${questionId}" data-required="${question.required ? "true" : "false"}">${(question.options || []).map((option) => `<label class="application-choice"><input type="checkbox" name="${questionId}" value="${escapeHtml(option)}"><span>${escapeHtml(option)}</span></label>`).join("")}</div>`;
+      } else if (question.type === "rating") {
+        control = `<div class="application-rating-list">${Array.from({ length: 10 }, (_, index) => index + 1).map((rating) => `<label><input type="radio" name="${questionId}" value="${rating}" ${question.required && rating === 1 ? "required" : ""}><span>${rating}</span></label>`).join("")}</div><div class="application-rating-scale"><span>Not at all</span><span>Extremely</span></div>`;
+      } else if (question.type === "file") {
+        control = `<input id="${escapeHtml(id)}" type="file" name="${questionId}" accept=".pdf,.docx,.jpg,.jpeg,.png,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,text/plain" ${question.required ? "required" : ""}><small class="application-file-hint">PDF, DOCX, JPG, PNG, or TXT · up to 10 files, 512 KB total</small>`;
+      } else {
+        control = `<input id="${escapeHtml(id)}" name="${questionId}" maxlength="250" ${question.required ? "required" : ""}>`;
+      }
+      const grouped = ["multiple_choice", "checkboxes", "rating"].includes(question.type);
+      const questionLabel = grouped
+        ? `<strong class="public-application-question-prompt">${escapeHtml(question.text)}${requiredLabel}</strong>`
+        : `<label for="${escapeHtml(id)}">${escapeHtml(question.text)}${requiredLabel}</label>`;
+      return `<fieldset class="public-application-question" data-question-type="${escapeHtml(question.type)}"><legend class="public-application-question-number"><span>QUESTION ${String(index + 1).padStart(2, "0")}</span>${grouped ? questionLabel : ""}</legend>${grouped ? "" : questionLabel}${control}</fieldset>`;
     }).join("");
     formElement.dataset.loaded = "true";
     message.textContent = "Your verified Discord and Roblox accounts will be included with your submission.";
@@ -1565,19 +1687,55 @@ async function initialize() {
   if (currentUser) await loadDepartments();
   bindModerationAutocomplete("#moderation-user-search", "#moderation-user-suggestions");
   bindModerationAutocomplete("#moderation-logs-search", "#moderation-log-suggestions");
+  $("#application-question-list").innerHTML = applicationQuestionRowTemplate(1);
+  refreshApplicationQuestionRows();
   $("#application-add-question").addEventListener("click", () => {
     const list = $("#application-question-list");
     if (list.children.length >= 20) return showToast("An application can have at most 20 questions.");
-    const row = document.createElement("div");
-    row.className = "application-question-row";
-    row.dataset.applicationQuestion = "";
-    row.innerHTML = '<label class="application-field">Question<input data-question-text maxlength="160" required placeholder="Enter a question"></label><label class="application-field">Answer type<select data-question-type><option value="short">Short answer</option><option value="long">Long answer</option></select></label><label class="application-required"><input data-question-required type="checkbox" checked> Required</label><button class="button button-quiet application-remove-question" type="button" data-remove-question aria-label="Remove question">×</button>';
-    list.append(row);
+    list.insertAdjacentHTML("beforeend", applicationQuestionRowTemplate(list.children.length + 1));
+    refreshApplicationQuestionRows();
+  });
+  $("#application-question-list").addEventListener("change", (event) => {
+    if (event.target.matches("[data-question-type]")) refreshApplicationQuestionRows();
   });
   $("#application-question-list").addEventListener("click", (event) => {
     if (!event.target.closest("[data-remove-question]")) return;
     if ($("#application-question-list").children.length <= 1) return showToast("Keep at least one question in the application.");
     event.target.closest("[data-application-question]").remove();
+    refreshApplicationQuestionRows();
+  });
+  $("#application-cancel-edit").addEventListener("click", () => {
+    resetApplicationEditor();
+    $("#application-builder-message").textContent = "Edit cancelled.";
+  });
+  $("#application-forms-list").addEventListener("click", async (event) => {
+    const editButton = event.target.closest("[data-edit-application]");
+    if (editButton) {
+      const form = applicationForms.find((item) => item.id === editButton.dataset.editApplication);
+      if (!form) return showToast("That published application could not be found. Refresh and try again.");
+      editApplicationForm(form);
+      return;
+    }
+
+    const deleteButton = event.target.closest("[data-delete-application]");
+    if (!deleteButton) return;
+    const form = applicationForms.find((item) => item.id === deleteButton.dataset.deleteApplication);
+    if (!form) return showToast("That published application could not be found. Refresh and try again.");
+    if (!(await customConfirm(
+      `Remove “${form.title}” from published applications? Its public link will stop working, but existing submissions will be kept.`,
+      { title: "Delete published application", confirmLabel: "Delete application" }
+    ))) return;
+    deleteButton.disabled = true;
+    try {
+      await requestJson("/api/applications/manage/forms/" + encodeURIComponent(form.id), { method: "DELETE" });
+      if (editingApplicationFormId === form.id) resetApplicationEditor();
+      $("#application-builder-message").textContent = "Application deleted. Existing submissions were kept.";
+      $("#application-builder-message").classList.remove("is-error");
+      await loadApplicationForms();
+    } catch (error) {
+      deleteButton.disabled = false;
+      showToast(error.message);
+    }
   });
   $("#application-publish").addEventListener("click", async () => {
     const formElement = $("#application-builder-form");
@@ -1590,11 +1748,16 @@ async function initialize() {
     const questions = Array.from($("#application-question-list").querySelectorAll("[data-application-question]"), (row) => ({
       text: row.querySelector("[data-question-text]").value,
       type: row.querySelector("[data-question-type]").value,
-      required: row.querySelector("[data-question-required]").checked
+      required: row.querySelector("[data-question-required]").checked,
+      options: row.querySelector("[data-question-options]").value.split(/\r?\n/).map((option) => option.trim()).filter(Boolean)
     }));
     try {
-      const result = await requestJson("/api/applications/manage/forms", {
-        method: "POST",
+      const editing = Boolean(editingApplicationFormId);
+      const endpoint = editing
+        ? "/api/applications/manage/forms/" + encodeURIComponent(editingApplicationFormId)
+        : "/api/applications/manage/forms";
+      const result = await requestJson(endpoint, {
+        method: editing ? "PUT" : "POST",
         body: JSON.stringify({
           title: $("#application-title").value,
           description: $("#application-description").value,
@@ -1603,11 +1766,12 @@ async function initialize() {
       });
       const link = $("#application-published-link");
       link.hidden = false;
-      link.innerHTML = `<strong>Application published — share this link</strong><a href="${escapeHtml(result.url)}" target="_blank" rel="noreferrer">${escapeHtml(result.url)}</a><button class="button button-outline" type="button" data-copy-application="${escapeHtml(result.url)}">Copy link</button>`;
-      message.textContent = "Published. Applicants must sign in and verify Discord and Roblox before submitting.";
-      formElement.reset();
-      const questionList = $("#application-question-list");
-      questionList.innerHTML = '<div class="application-question-row" data-application-question><label class="application-field">Question<input data-question-text maxlength="160" required placeholder="Enter a question"></label><label class="application-field">Answer type<select data-question-type><option value="short">Short answer</option><option value="long">Long answer</option></select></label><label class="application-required"><input data-question-required type="checkbox" checked> Required</label><button class="button button-quiet application-remove-question" type="button" data-remove-question aria-label="Remove question">×</button></div>';
+      const publicUrl = result.url || new URL("/apply/" + encodeURIComponent(result.form.publicId), window.location.origin).toString();
+      link.innerHTML = `<strong>${editing ? "Application updated" : "Application published"} — share this link</strong><a href="${escapeHtml(publicUrl)}" target="_blank" rel="noreferrer">${escapeHtml(publicUrl)}</a><button class="button button-outline" type="button" data-copy-application="${escapeHtml(publicUrl)}">Copy link</button>`;
+      resetApplicationEditor();
+      message.textContent = editing
+        ? "Application updated. Existing submissions keep their original questions and answers."
+        : "Published. Applicants must sign in and verify Discord and Roblox before submitting.";
       await loadApplicationForms();
     } catch (error) {
       message.textContent = error.message;
@@ -1619,20 +1783,43 @@ async function initialize() {
   $("#public-application-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const formElement = event.currentTarget;
+    formElement.querySelectorAll("[data-checkbox-group]").forEach((group) => {
+      const inputs = Array.from(group.querySelectorAll('input[type="checkbox"]'));
+      const selected = inputs.some((input) => input.checked);
+      inputs[0].setCustomValidity(group.dataset.required === "true" && !selected ? "Select at least one option." : "");
+    });
     if (formElement.dataset.loaded !== "true" || !formElement.reportValidity()) return;
     const submitButton = $("#public-application-submit");
     const message = $("#public-application-message");
-    const answers = Object.fromEntries(new FormData(formElement).entries());
+    const formData = new FormData(formElement);
+    const answers = {};
     submitButton.disabled = true;
     message.textContent = "Submitting your application…";
     message.classList.remove("is-error");
     try {
+      let totalFileBytes = 0;
+      let totalFileCount = 0;
+      for (const question of formElement.querySelectorAll("[data-question-type]")) {
+        const id = question.querySelector("[name]")?.name;
+        if (!id) continue;
+        if (question.dataset.questionType === "checkboxes") answers[id] = formData.getAll(id);
+        else if (question.dataset.questionType === "file") {
+          const file = formData.get(id);
+          if (file instanceof File && file.size) {
+            totalFileCount += 1;
+            if (totalFileCount > 10) throw new Error("An application can include up to 10 uploaded files.");
+            totalFileBytes += file.size;
+            if (totalFileBytes > 512 * 1024) throw new Error("Uploaded files together must be 512 KB or smaller.");
+          }
+          answers[id] = file instanceof File && file.size ? await applicationFilePayload(file) : "";
+        } else answers[id] = formData.get(id) || "";
+      }
       await requestJson("/api/applications/forms/" + encodeURIComponent(applicationPublicIdFromPath()), {
         method: "POST",
         body: JSON.stringify({ answers })
       });
       message.textContent = "Application submitted. The reviewing team will contact you by Discord DM.";
-      formElement.querySelectorAll("input, textarea").forEach((input) => { input.disabled = true; });
+      formElement.querySelectorAll("input, textarea, select, button").forEach((input) => { input.disabled = true; });
     } catch (error) {
       message.textContent = error.message;
       message.classList.add("is-error");

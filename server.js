@@ -5,6 +5,7 @@ const crypto = require("node:crypto");
 const { normalizeApplicationAnswers, normalizeApplicationForm } = require("./applications");
 const {
   createVerificationRequest,
+  archiveApplicationForm,
   createApplicationForm,
   createApplicationSubmission,
   createModerationLog,
@@ -13,6 +14,7 @@ const {
   getErlcPlaytimeMonitor,
   getApplicationForms,
   getPublicApplicationForm,
+  updateApplicationForm,
   getModerationLogs,
   getModerationShift,
   getRobloxPlaytime,
@@ -50,6 +52,7 @@ const ROBLOX_NEXT_COOKIE = COOKIE_SECURE ? "__Host-nycrp_roblox_next" : "nycrp_r
 const ROBLOX_STATE_COOKIE = COOKIE_SECURE ? "__Host-nycrp_roblox_state" : "nycrp_roblox_state";
 const ROBLOX_VERIFIER_COOKIE = COOKIE_SECURE ? "__Host-nycrp_roblox_verifier" : "nycrp_roblox_verifier";
 const MAX_BODY = 64 * 1024;
+const MAX_APPLICATION_SUBMISSION_BODY = 768 * 1024;
 const MODERATION_ROLE_ID = "1555316953864998994";
 const APPLICATION_MANAGER_ROLE_ID = "1567209306317791442";
 const APPLICATION_PUBLIC_ID_PATTERN = /^[A-Za-z0-9_-]{32}$/;
@@ -1100,11 +1103,11 @@ function roundMoney(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-async function readBody(request) {
+async function readBody(request, maxLength = MAX_BODY) {
   let body = "";
   for await (const chunk of request) {
     body += chunk;
-    if (body.length > MAX_BODY) throw new Error("Request body is too large.");
+    if (body.length > maxLength) throw new Error("Request body is too large.");
   }
   try { return body ? JSON.parse(body) : {}; } catch { throw new Error("Invalid JSON body."); }
 }
@@ -1339,6 +1342,27 @@ async function handleRequest(request, response) {
       return sendJson(response, 405, { error: "Method not allowed." });
     }
 
+    const managedApplicationFormMatch = url.pathname.match(/^\/api\/applications\/manage\/forms\/([A-Za-z0-9_-]{1,80})$/);
+    if (managedApplicationFormMatch) {
+      if (!await requireApplicationManager(response, user)) return;
+      if (!checkOrigin(request, url)) return sendJson(response, 403, { error: "Request origin was not allowed." });
+      if (request.method === "PUT") {
+        let body;
+        try { body = await readBody(request); } catch (error) { return sendJson(response, 400, { error: error.message }); }
+        const normalized = normalizeApplicationForm(body);
+        if (normalized.error) return sendJson(response, 400, { error: normalized.error });
+        const form = await updateApplicationForm(managedApplicationFormMatch[1], normalized);
+        if (!form) return sendJson(response, 404, { error: "This published application is no longer available." });
+        return sendJson(response, 200, { form });
+      }
+      if (request.method === "DELETE") {
+        const deleted = await archiveApplicationForm(managedApplicationFormMatch[1]);
+        if (!deleted) return sendJson(response, 404, { error: "This published application is no longer available." });
+        return sendJson(response, 200, { ok: true });
+      }
+      return sendJson(response, 405, { error: "Method not allowed." });
+    }
+
     const applicationFormMatch = url.pathname.match(/^\/api\/applications\/forms\/([A-Za-z0-9_-]{32})$/);
     if (applicationFormMatch) {
       if (!await requireVerified(response, user, true)) return;
@@ -1357,7 +1381,7 @@ async function handleRequest(request, response) {
       if (request.method === "POST") {
         if (!checkOrigin(request, url)) return sendJson(response, 403, { error: "Request origin was not allowed." });
         let body;
-        try { body = await readBody(request); } catch (error) { return sendJson(response, 400, { error: error.message }); }
+        try { body = await readBody(request, MAX_APPLICATION_SUBMISSION_BODY); } catch (error) { return sendJson(response, 400, { error: error.message }); }
         const normalized = normalizeApplicationAnswers(form, body);
         if (normalized.error) return sendJson(response, 400, { error: normalized.error });
         const access = await getBotAccess(user.id);

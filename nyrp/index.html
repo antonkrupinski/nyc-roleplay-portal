@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css?v=1.2.1">
+    <link rel="stylesheet" href="/styles.css?v=1.2.3">
   </head>
   <body>
     <div class="app-shell">
@@ -298,7 +298,7 @@
             </div>
             <div class="application-builder-grid">
               <form class="content-panel application-builder" id="application-builder-form">
-                <div class="panel-heading"><div class="panel-title"><span class="panel-icon">▤</span><div><h2>Build an application</h2><p>Applicants must verify their Discord and Roblox accounts.</p></div></div></div>
+                <div class="panel-heading"><div class="panel-title"><span class="panel-icon">▤</span><div><h2>Application details</h2><p>Set up the form residents will see. Discord and Roblox verification is required.</p></div></div></div>
                 <div class="application-builder-fields">
                   <label class="application-field">Application title
                     <input id="application-title" name="title" maxlength="100" required placeholder="Example: Police Department Application">
@@ -306,19 +306,12 @@
                   <label class="application-field">Description
                     <textarea id="application-description" name="description" maxlength="2000" rows="3" placeholder="Tell applicants what this application is for."></textarea>
                   </label>
-                  <div class="application-question-heading"><div><h3>Questions</h3><p>Add up to 20 questions.</p></div><button class="button button-outline" id="application-add-question" type="button">＋ Add question</button></div>
-                  <div class="application-question-list" id="application-question-list">
-                    <div class="application-question-row" data-application-question>
-                      <label class="application-field">Question
-                        <input data-question-text maxlength="160" required placeholder="Enter a question">
-                      </label>
-                      <label class="application-field">Answer type
-                        <select data-question-type><option value="short">Short answer</option><option value="long">Long answer</option></select>
-                      </label>
-                      <label class="application-required"><input data-question-required type="checkbox" checked> Required</label>
-                      <button class="button button-quiet application-remove-question" type="button" data-remove-question aria-label="Remove question">×</button>
-                    </div>
+                  <div class="application-question-heading">
+                    <div><span class="section-kicker">FORM DESIGN</span><h3>Questions <span class="application-question-count" id="application-question-count">1 / 20</span></h3><p>Choose the response format that best fits each question.</p></div>
+                    <button class="button button-outline" id="application-add-question" type="button">＋ Add question</button>
                   </div>
+                  <div class="application-question-list" id="application-question-list"></div>
+                  <div class="application-builder-hint"><span>ⓘ</span><span>Choice questions need at least two unique options. Applications can include up to 10 PDF, DOCX, JPG, PNG, or TXT uploads (512 KB total).</span></div>
                 </div>
                 <div class="application-builder-message" id="application-builder-message" role="status"></div>
               </form>
@@ -333,9 +326,10 @@
           <section class="route-page applications-page" data-page="apply" id="public-application-page">
             <div class="page-heading"><div><div class="eyebrow"><span>RESIDENT SERVICES</span><i></i><span>APPLICATION</span></div><h1 id="public-application-title">Application<span class="heading-period">.</span></h1><p class="heading-subtitle" id="public-application-description">Complete each required question and submit your application.</p></div></div>
             <form class="content-panel public-application-form" id="public-application-form">
+              <div class="public-application-intro"><span class="public-application-intro-icon">✓</span><div><strong>Verified application</strong><p>Your verified Discord and Roblox accounts are included with your submission.</p></div></div>
               <div class="application-builder-message" id="public-application-message" role="status">Loading application…</div>
               <div id="public-application-questions"></div>
-              <button class="button button-primary" id="public-application-submit" type="submit" disabled>Submit application <span>→</span></button>
+              <div class="public-application-footer"><span>Your answers are sent securely to the review team.</span><button class="button button-primary" id="public-application-submit" type="submit" disabled>Submit application <span>→</span></button></div>
             </form>
           </section>
 
@@ -438,6 +432,7 @@
         </div>
       </form>
     </dialog>
+
     <dialog class="modal" id="profile-modal">
       <form method="dialog" class="modal-card" id="profile-form">
         <div class="modal-heading"><div><span class="section-kicker">MAKE IT YOURS</span><h2>Edit your profile</h2><p>Your story starts with the details.</p></div><button class="close-modal" type="button" data-close-modal aria-label="Close">×</button></div>
@@ -482,6 +477,6 @@
         <div class="connect-foot"><span>PRIVATE BY DEFAULT</span><i>·</i><span>ROLEPLAY ONLY</span><i>·</i><span>MADE FOR NYC</span></div>
       </form>
     </dialog>
-  <script src="/app.js?v=1.0.34"></script>
+  <script src="/app.js?v=1.0.36"></script>
   </body>
 </html>

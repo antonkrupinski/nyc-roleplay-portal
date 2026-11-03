@@ -40,6 +40,68 @@ test("application answers enforce required fields, types, and answer limits", ()
   }), { answers: { "required-short": "Alex", "optional-long": "" } });
 });
 
+test("application forms validate choice options and preserve all supported response types", () => {
+  const form = normalizeApplicationForm({
+    title: "Staff application",
+    questions: [
+      { text: "Department", type: "dropdown", options: ["Police", "Fire"] },
+      { text: "Skills", type: "checkboxes", options: ["Writing", "Training"] },
+      { text: "Experience", type: "multiple_choice", options: ["New", "Experienced"] },
+      { text: "Confidence", type: "rating" },
+      { text: "Resume", type: "file", required: false }
+    ]
+  });
+  assert.equal(form.questions[0].type, "dropdown");
+  assert.deepEqual(form.questions[0].options, ["Police", "Fire"]);
+  assert.equal(form.questions[4].type, "file");
+  assert.match(normalizeApplicationForm({
+    title: "Staff application",
+    questions: [{ text: "Department", type: "dropdown", options: ["Police", " police "] }]
+  }).error, /unique/);
+  assert.match(normalizeApplicationForm({
+    title: "Staff application",
+    questions: [{ text: "Department", type: "checkboxes", options: ["Only one"] }]
+  }).error, /between 2 and 20/);
+});
+
+test("choice, checkbox, rating, and file answers are validated and normalized", () => {
+  const form = {
+    questions: [
+      { id: "department", text: "Department", type: "dropdown", options: ["Police", "Fire"], required: true },
+      { id: "skills", text: "Skills", type: "checkboxes", options: ["Writing", "Training"], required: true },
+      { id: "confidence", text: "Confidence", type: "rating", required: true },
+      { id: "resume", text: "Resume", type: "file", required: true }
+    ]
+  };
+  const file = { name: "resume.txt", type: "text/plain", size: 3, data: Buffer.from("abc").toString("base64") };
+  assert.match(normalizeApplicationAnswers(form, {
+    answers: { department: "Other", skills: ["Writing"], confidence: "9", resume: file }
+  }).error, /valid option/);
+  assert.match(normalizeApplicationAnswers(form, {
+    answers: { department: "Police", skills: ["Unknown"], confidence: "9", resume: file }
+  }).error, /valid options/);
+  assert.match(normalizeApplicationAnswers(form, {
+    answers: { department: "Police", skills: ["Writing"], confidence: "11", resume: file }
+  }).error, /rating from 1 to 10/);
+  assert.match(normalizeApplicationAnswers(form, {
+    answers: { department: "Police", skills: ["Writing"], confidence: "9", resume: { ...file, type: "application/x-msdownload" } }
+  }).error, /PDF, DOCX/);
+  const fileQuestions = Array.from({ length: 11 }, (_, index) => ({
+    id: "file-" + index,
+    text: "Upload " + index,
+    type: "file",
+    required: true
+  }));
+  const fileAnswers = Object.fromEntries(fileQuestions.map((question) => [question.id, file]));
+  assert.match(normalizeApplicationAnswers({ questions: fileQuestions }, { answers: fileAnswers }).error, /up to 10 uploaded files/);
+
+  const normalized = normalizeApplicationAnswers(form, {
+    answers: { department: "Police", skills: ["Writing", "Training"], confidence: "9", resume: file }
+  });
+  assert.deepEqual(normalized.answers.skills, ["Writing", "Training"]);
+  assert.deepEqual(normalized.answers.resume, file);
+});
+
 test("shared application links keep their destination through the Discord sign-in gate", async () => {
   const publicId = "Abcdefghijklmnopqrstuvwxyz012345";
   const originalDiscordConfig = {
@@ -91,8 +153,22 @@ test("the management page is absent from navigation and both portal copies suppo
     assert.match(html, /data-page="apply"/);
     assert.doesNotMatch(html, /data-route="applications"/);
     assert.match(client, /applicationManagerAccess/);
+    assert.match(client, /data-edit-application/);
+    assert.match(client, /data-delete-application/);
+    assert.match(client, /method: editing \? "PUT" : "POST"/);
     assert.match(server, /1567209306317791442/);
     assert.match(server, /createApplicationSubmission/);
+    assert.match(server, /managedApplicationFormMatch/);
+    assert.match(server, /archiveApplicationForm/);
+    assert.match(server, /updateApplicationForm/);
     assert.match(store, /reviewApplicationSubmission/);
+    assert.match(store, /async function archiveApplicationForm/);
+    assert.match(store, /isActive: false/);
+    assert.match(store, /form\.isActive !== false/);
   }
+
+  const nestedRoot = path.join(projectRoot, "nyrp");
+  assert.match(fs.readFileSync(path.join(nestedRoot, "index.html"), "utf8"), /id="confirm-modal"/);
+  assert.match(fs.readFileSync(path.join(nestedRoot, "app.js"), "utf8"), /function customConfirm/);
+  assert.match(fs.readFileSync(path.join(nestedRoot, "styles.css"), "utf8"), /Refined nested-portal navigation/);
 });
