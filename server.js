@@ -15,6 +15,7 @@ const {
   getVerificationAccess,
   saveDiscordOAuthTokens,
   deleteDiscordOAuthTokens,
+  saveGuildMemberRoleIds,
   resetDepartmentRecord,
   updateModerationLog,
   updateModerationShift,
@@ -172,12 +173,18 @@ async function getBotAccess(discordId, force = false) {
   try {
     const data = await getVerificationAccess(discordId, SESSION_SECRET);
     const robloxId = typeof data.roblox?.robloxId === "string" && /^\d{1,24}$/.test(data.roblox.robloxId) ? data.roblox.robloxId : null;
-    let roleIds = [];
+    const syncedRoleIds = Array.isArray(data.roleIds)
+      ? data.roleIds.filter((roleId) => typeof roleId === "string" && /^\d{17,20}$/.test(roleId))
+      : [];
+    let roleIds = syncedRoleIds;
     if (data.discordOAuthTokens) {
       try {
         roleIds = await getCurrentDiscordRoleIds(discordId, data.guildId, data.discordOAuthTokens);
+        if (roleIds.length !== syncedRoleIds.length || roleIds.some((roleId) => !syncedRoleIds.includes(roleId))) {
+          await saveGuildMemberRoleIds(discordId, roleIds);
+        }
       } catch (error) {
-        console.error("Could not verify Discord roles for member " + discordId + ":", error.message);
+        console.error("Could not refresh Discord roles for member " + discordId + "; using the last bot-synced roles:", error.message);
       }
     }
     const value = {

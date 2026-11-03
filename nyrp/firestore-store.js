@@ -122,6 +122,13 @@ async function deleteDiscordOAuthTokens(discordId) {
   await getFirestore().collection("discordOAuthTokens").doc(String(discordId)).delete();
 }
 
+async function saveGuildMemberRoleIds(discordId, roleIds) {
+  await getFirestore().collection("guildMembers").doc(String(discordId)).set({
+    roleIds: Array.from(new Set(roleIds.filter((roleId) => /^\d{17,20}$/.test(roleId)))),
+    roleIdsUpdatedAt: new Date().toISOString()
+  }, { merge: true });
+}
+
 async function getRobloxPlaytime(robloxId) {
   const snapshot = await getFirestore().collection("erlcPlaytime").doc(String(robloxId)).get();
   if (!snapshot.exists) return { robloxId: String(robloxId), totalSeconds: 0, lastSeenAt: null };
@@ -322,6 +329,7 @@ module.exports = {
   getVerificationAccess,
   saveDiscordOAuthTokens,
   deleteDiscordOAuthTokens,
+  saveGuildMemberRoleIds,
   resetDepartmentRecord,
   updateModerationLog,
   updateModerationShift,
