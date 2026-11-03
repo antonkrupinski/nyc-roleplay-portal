@@ -149,6 +149,29 @@ function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
 }
 
+function normalizeVehicleStatus(value) {
+  const normalized = String(value ?? "").trim();
+  const statusMap = { Registered: "Valid", Parked: "Valid", Valid: "Valid", Stolen: "Stolen", Expired: "Expired" };
+  return statusMap[normalized] || "Valid";
+}
+
+function readVehicleStatusMap() {
+  try {
+    const raw = JSON.parse(localStorage.getItem("nycrp.vehicle-statuses.v1") || "{}");
+    return raw && typeof raw === "object" ? raw : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeVehicleStatusMap(statuses) {
+  localStorage.setItem("nycrp.vehicle-statuses.v1", JSON.stringify(statuses));
+}
+
+function persistVehicleList(list) {
+  localStorage.setItem(vehicleKey, JSON.stringify(Array.isArray(list) ? list : []));
+}
+
 function minutesLabel(value) {
   const minutes = Math.max(0, Math.floor(Number(value) || 0));
   const hours = Math.floor(minutes / 60);
@@ -574,14 +597,15 @@ function createVehicleRow(vehicle) {
     const color = vehicle.colorHex ? `${vehicle.color || "Color"} ${vehicle.colorHex}` : vehicle.color;
     const texture = vehicle.texture && !/^none$/i.test(vehicle.texture) ? "Livery: " + vehicle.texture : "";
     model.textContent = [vehicle.model, color, texture].filter(Boolean).join(" · ");
+    const statusValue = normalizeVehicleStatus(vehicle.status || "Valid");
     const status = document.createElement("span");
-    status.className = "vehicle-status " + vehicle.status.toLowerCase();
-    status.textContent = vehicle.status || "Valid";
+    status.className = "vehicle-status " + statusValue.toLowerCase();
+    status.textContent = statusValue;
     if (vehicle.source === "erlc") {
       status.classList.add("vehicle-status-control");
       status.tabIndex = 0;
       status.setAttribute("role", "button");
-      status.title = "Change registry status: Valid → Stolen → Expired";
+      status.title = "Change registry status: Valid → Stolen → Expired → Valid";
       status.dataset.vehicleStatus = String(vehicle.plate || vehicle.id);
     }
     model.title = [vehicle.model, vehicle.color, vehicle.colorHex, texture, vehicle.owner ? "Owner: " + vehicle.owner : ""].filter(Boolean).join(" · ");
@@ -621,15 +645,43 @@ function renderVehicles() {
 
 async function refreshLiveVehicles() {
   if (!currentUser) return;
+  const cachedVehicles = (() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem(vehicleKey) || "[]");
+      return Array.isArray(raw) ? raw : [];
+    } catch {
+      return [];
+    }
+  })();
+  const savedStatuses = readVehicleStatusMap();
+
   try {
     const data = await requestJson("/api/erlc/vehicles");
-    const savedStatuses = JSON.parse(localStorage.getItem("nycrp.vehicle-statuses.v1") || "{}");
-    vehicles = (Array.isArray(data.vehicles) ? data.vehicles : []).map((vehicle) => ({ ...vehicle, status: savedStatuses[String(vehicle.plate || vehicle.id)] || "Valid" }));
+    const liveVehicles = Array.isArray(data.vehicles) ? data.vehicles : [];
+    const merged = [];
+    const seen = new Set();
+
+    liveVehicles.forEach((vehicle) => {
+      const key = String(vehicle.plate || vehicle.id);
+      if (!key) return;
+      seen.add(key);
+      merged.push({ ...vehicle, status: normalizeVehicleStatus(savedStatuses[key] || vehicle.status || "Valid") });
+    });
+
+    cachedVehicles.forEach((vehicle) => {
+      const key = String(vehicle.plate || vehicle.id);
+      if (!key || seen.has(key)) return;
+      merged.push({ ...vehicle, status: normalizeVehicleStatus(savedStatuses[key] || vehicle.status || "Valid") });
+    });
+
+    vehicles = merged.length ? merged : cachedVehicles.map((vehicle) => ({ ...vehicle, status: normalizeVehicleStatus(savedStatuses[String(vehicle.plate || vehicle.id)] || vehicle.status || "Valid") }));
     vehicleRobloxUsername = data.robloxUsername || currentUser.robloxUsername || "";
     vehicleSyncStatus = "ready";
+    persistVehicleList(vehicles);
   } catch {
-    vehicles = [];
-    vehicleSyncStatus = "error";
+    vehicles = cachedVehicles.map((vehicle) => ({ ...vehicle, status: normalizeVehicleStatus(savedStatuses[String(vehicle.plate || vehicle.id)] || vehicle.status || "Valid") }));
+    vehicleSyncStatus = vehicles.length ? "ready" : "error";
+    if (vehicles.length) persistVehicleList(vehicles);
   }
   renderVehicles();
 }
@@ -1168,12 +1220,68 @@ function searchLeo(type, query) {
   root._leoRows=rows;
 }
 function createLeoPaperwork(person, kind) {
-  openLeoModal(`<div class="paperwork"><div class="paperwork-head"><small>NEW YORK ROLEPLAY · LAW ENFORCEMENT</small><h2>${kind.toUpperCase()} REPORT</h2><p>OFFICIAL INCIDENT / RECORD DOCUMENT</p></div><form id="leo-paper-form"><label>CAD Name<input name="cadName" required value="${escapeHtml(person.cadName||"")}"></label><label>Roblox Username<input name="robloxUsername" value="${escapeHtml(person.robloxUsername||"")}"></label><label>Incident / case number<input name="caseNumber" placeholder="Automatically assigned if blank"></label><label>Details<textarea name="details" rows="5" required placeholder="Enter facts, circumstances, and relevant details..."></textarea></label><label>Officer<input name="officer" value="${escapeHtml(currentUser?.username||"Officer")}"></label><div class="paperwork-actions"><button type="button" class="button button-quiet" data-close-modal>Cancel</button><button class="button button-primary">File ${kind}</button></div></form></div>`);
-  $("#leo-paper-form").addEventListener("submit",e=>{e.preventDefault();const f=new FormData(e.currentTarget);const list=readStore(leoRecordsKey);const rec={...person,id:person.id||crypto.randomUUID(),cadName:f.get("cadName"),robloxUsername:f.get("robloxUsername"),documents:person.documents||[]};rec.documents.push({type:kind,caseNumber:f.get("caseNumber")||`NY-${Date.now()}`,details:f.get("details"),officer:f.get("officer"),createdAt:new Date().toLocaleString()});const i=list.findIndex(x=>x.id===rec.id);if(i>=0)list[i]=rec;else list.push(rec);writeStore(leoRecordsKey,list);$("#leo-modal").close();showToast(`${kind} saved to the person record.`);searchLeo("roblox",rec.robloxUsername||rec.cadName);});
+  const chargeOptions = [
+    "Speeding",
+    "Reckless Driving",
+    "Expired Registration",
+    "No Insurance",
+    "Driving While Suspended",
+    "Improper Lane Change",
+    "Failure to Stop",
+    "Signal Violation",
+    "Obstruction",
+    "Disorderly Conduct",
+    "No Valid License",
+    "Other"
+  ];
+  const reportTitle = String(kind || "Citation");
+  openLeoModal(`<div class="paperwork"><div class="paperwork-head"><small>NEW YORK ROLEPLAY · LAW ENFORCEMENT</small><h2>${escapeHtml(reportTitle.toUpperCase())} REPORT</h2><p>OFFICIAL INCIDENT / RECORD DOCUMENT</p></div><form id="leo-paper-form"><div class="official-form-grid"><label>CAD Name<input name="cadName" required value="${escapeHtml(person.cadName || "")}"></label><label>Roblox Username<input name="robloxUsername" value="${escapeHtml(person.robloxUsername || "")}"></label><label>Case Number<input name="caseNumber" value="NY-${Date.now()}"></label><label>Charge<select name="charge" required>${chargeOptions.map((charge) => `<option value="${escapeHtml(charge)}">${escapeHtml(charge)}</option>`).join("")}</select></label><label>Location<input name="location" value="NYC" placeholder="Location"></label><label>Officer<input name="officer" value="${escapeHtml(currentUser?.username || "Officer")}"></label></div><label>Details<textarea name="details" rows="5" required placeholder="Provide the factual summary, observed behavior, and any relevant statements..."></textarea></label><div class="paperwork-actions"><button type="button" class="button button-quiet" data-close-modal>Cancel</button><button class="button button-primary">File ${escapeHtml(reportTitle)}</button></div></form></div>`);
+  $("#leo-paper-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const list = readStore(leoRecordsKey);
+    const recordId = String(person.id || `${person.robloxUsername || person.cadName || "person"}-${Date.now()}`);
+    const existingIndex = list.findIndex((entry) => String(entry.id) === recordId);
+    const record = existingIndex >= 0 ? { ...list[existingIndex] } : { ...person, id: recordId, cadName: person.cadName || formData.get("cadName") || "", robloxUsername: person.robloxUsername || formData.get("robloxUsername") || "", documents: Array.isArray(person.documents) ? [...person.documents] : [] };
+    record.cadName = String(formData.get("cadName") || record.cadName || "").trim();
+    record.robloxUsername = String(formData.get("robloxUsername") || record.robloxUsername || "").trim();
+    record.documents = Array.isArray(record.documents) ? record.documents : [];
+    record.documents.push({
+      type: reportTitle,
+      charge: String(formData.get("charge") || "Other"),
+      caseNumber: String(formData.get("caseNumber") || `NY-${Date.now()}`),
+      location: String(formData.get("location") || "NYC"),
+      details: String(formData.get("details") || ""),
+      officer: String(formData.get("officer") || currentUser?.username || "Officer"),
+      createdAt: new Date().toLocaleString()
+    });
+    if (existingIndex >= 0) list[existingIndex] = record; else list.push(record);
+    writeStore(leoRecordsKey, list);
+    $("#leo-modal").close();
+    showToast(`${reportTitle} saved to the person record.`);
+    searchLeo("roblox", record.robloxUsername || record.cadName || "");
+  });
 }
 function showLeoResult(row) {
-  if(row.kind==="vehicle") { const v=row.value;const status=v.status||"Valid";openLeoModal(`<div class="paperwork"><div class="paperwork-head"><small>NEW YORK ROLEPLAY · VEHICLE REGISTRY</small><h2>VEHICLE RECORD</h2><p>${escapeHtml(v.plate||"NO PLATE")}</p></div><dl class="record-details"><dt>Vehicle</dt><dd>${escapeHtml(v.model||"Unknown")}</dd><dt>Color</dt><dd>${escapeHtml(v.color||"Unknown")}</dd><dt>Owner</dt><dd>${escapeHtml(v.owner||vehicleRobloxUsername||"Not available")}</dd><dt>Registration status</dt><dd><b class="leave-status ${status.toLowerCase()}">${escapeHtml(status)}</b></dd></dl><p class="small-muted">Status is controlled by the vehicle owner / registry record.</p><button class="button button-quiet" data-close-modal>Close</button></div>`);return; }
-  const person=row.value;const docs=person.documents||[];openLeoModal(`<div class="paperwork"><div class="paperwork-head"><small>NEW YORK ROLEPLAY · PERSONNEL RECORD</small><h2>PERSON RECORD</h2><p>${escapeHtml(person.cadName||person.robloxUsername)}</p></div><dl class="record-details"><dt>CAD Name</dt><dd>${escapeHtml(person.cadName||"—")}</dd><dt>Roblox Username</dt><dd>${escapeHtml(person.robloxUsername||"—")}</dd></dl><h3>Filed documents</h3>${docs.length?docs.map(d=>`<article class="paper-document"><strong>${escapeHtml(d.type)} · ${escapeHtml(d.caseNumber)}</strong><p>${escapeHtml(d.details)}</p><small>${escapeHtml(d.officer)} · ${escapeHtml(d.createdAt)}</small></article>`).join(""):'<p>No documents on file.</p>'}<div class="paperwork-actions">${["Citation","Arrest","Warrant","Note"].map(k=>`<button class="button button-primary" data-leo-paper="${k}">${k}</button>`).join("")}</div><button class="button button-quiet" data-close-modal>Close</button></div>`);$("#leo-modal-content").querySelectorAll("[data-leo-paper]").forEach(b=>b.addEventListener("click",()=>createLeoPaperwork(person,b.dataset.leoPaper)));
+  if (row.kind === "vehicle") {
+    const v = row.value;
+    const status = normalizeVehicleStatus(v.status || "Valid");
+    const driverName = String(v.owner || vehicleRobloxUsername || "Driver unknown");
+    const driverPerson = { id: String(v.plate || v.id || driverName), cadName: driverName, robloxUsername: v.owner || vehicleRobloxUsername || "", documents: [] };
+    openLeoModal(`<div class="paperwork"><div class="paperwork-head"><small>NEW YORK ROLEPLAY · VEHICLE REGISTRY</small><h2>VEHICLE RECORD</h2><p>${escapeHtml(v.plate || "NO PLATE")}</p></div><dl class="record-details"><dt>Vehicle</dt><dd>${escapeHtml(v.model || "Unknown")}</dd><dt>Color</dt><dd>${escapeHtml(v.color || "Unknown")}</dd><dt>Owner</dt><dd>${escapeHtml(driverName)}</dd><dt>Registration status</dt><dd><b class="leave-status ${status.toLowerCase()}">${escapeHtml(status)}</b></dd></dl><p class="small-muted">Status is controlled by the vehicle owner / registry record.</p><div class="paperwork-actions"><button class="button button-primary" data-leo-paper="Citation">Issue Citation</button><button class="button button-primary" data-leo-paper="Arrest">Arrest Driver</button><button class="button button-primary" data-leo-paper="Note">Add Note</button><button class="button button-quiet" data-close-modal>Close</button></div></div>`);
+    $("#leo-modal-content").querySelectorAll("[data-leo-paper]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.dataset.leoPaper === "Close") return;
+        createLeoPaperwork(driverPerson, button.dataset.leoPaper);
+      });
+    });
+    return;
+  }
+  const person = row.value;
+  const docs = person.documents || [];
+  openLeoModal(`<div class="paperwork"><div class="paperwork-head"><small>NEW YORK ROLEPLAY · PERSONNEL RECORD</small><h2>PERSON RECORD</h2><p>${escapeHtml(person.cadName || person.robloxUsername || "Unidentified subject")}</p></div><dl class="record-details"><dt>CAD Name</dt><dd>${escapeHtml(person.cadName || "—")}</dd><dt>Roblox Username</dt><dd>${escapeHtml(person.robloxUsername || "—")}</dd></dl><h3>Filed documents</h3>${docs.length ? docs.map((document) => `<article class="paper-document"><strong>${escapeHtml(document.type)} · ${escapeHtml(document.caseNumber || "N/A")}</strong><p><b>${escapeHtml(document.charge || "Charge")}</b> · ${escapeHtml(document.details || "No details provided.")}</p><small>${escapeHtml(document.location || "NYC")} · ${escapeHtml(document.officer || "Officer")} · ${escapeHtml(document.createdAt || "Unknown time")}</small></article>`).join("") : '<p>No documents on file.</p>'}<div class="paperwork-actions">${["Citation", "Arrest", "Note"].map((kind) => `<button class="button button-primary" data-leo-paper="${kind}">${kind}</button>`).join("")}<button class="button button-quiet" data-close-modal>Close</button></div></div>`);
+  $("#leo-modal-content").querySelectorAll("[data-leo-paper]").forEach((button) => button.addEventListener("click", () => createLeoPaperwork(person, button.dataset.leoPaper)));
 }
 function openBoloForm(kind) {
  const vehicle=kind==="vehicle";
@@ -1212,7 +1320,6 @@ async function initialize() {
 
   if (currentUser) {
     localStorage.removeItem(profileKey);
-    localStorage.removeItem(vehicleKey);
     localStorage.removeItem(marketKey);
   }
   updateProfileUI();
@@ -1300,8 +1407,12 @@ async function initialize() {
   tradeModal.addEventListener("click", (event) => {
     if (event.target === tradeModal) tradeModal.close();
   });
-  document.querySelectorAll("[data-close-modal]").forEach((button) => {
-    button.addEventListener("click", () => button.closest("dialog")?.close());
+  document.addEventListener("click", (event) => {
+    const closeButton = event.target.closest?.("[data-close-modal]");
+    if (!closeButton) return;
+    const dialog = closeButton.closest("dialog");
+    if (dialog) dialog.close();
+    else if (event.target.closest?.("#leo-modal")) $("#leo-modal")?.close();
   });
   document.addEventListener("click", (event) => {
     const routeControl = event.target.closest?.("[data-route]");
@@ -1388,7 +1499,7 @@ async function initialize() {
       await loadDepartmentPage(activeDepartment.department.id);
     }
   });
-  document.addEventListener("click", e=>{const b=e.target.closest("[data-vehicle-status]");if(!b)return;const key=b.dataset.vehicleStatus;const current=vehicles.find(v=>String(v.plate||v.id)===key);if(!current)return;const next=current.status==="Valid"?"Stolen":current.status==="Stolen"?"Expired":"Expired";const statuses=JSON.parse(localStorage.getItem("nycrp.vehicle-statuses.v1")||"{}");statuses[key]=next;localStorage.setItem("nycrp.vehicle-statuses.v1",JSON.stringify(statuses));current.status=next;renderVehicles();showToast(`Vehicle status updated to ${next}.`);});
+  document.addEventListener("click", e=>{const b=e.target.closest("[data-vehicle-status]");if(!b)return;const key=b.dataset.vehicleStatus;const current=vehicles.find(v=>String(v.plate||v.id)===key);if(!current)return;const statusOrder=["Valid","Stolen","Expired"];const currentStatus=normalizeVehicleStatus(current.status);const currentIndex=statusOrder.indexOf(currentStatus);const next=statusOrder[(currentIndex === -1 ? 0 : currentIndex + 1) % statusOrder.length];const statuses=readVehicleStatusMap();statuses[key]=next;writeVehicleStatusMap(statuses);current.status=next;persistVehicleList(vehicles);renderVehicles();showToast(`Vehicle status updated to ${next}.`);});
     $("#leo-search-form")?.addEventListener("submit", e=>{e.preventDefault();const f=new FormData(e.currentTarget);searchLeo(f.get("type"),f.get("query"));});
   $("#leo-results")?.addEventListener("click",e=>{const b=e.target.closest("[data-leo-open]");if(b){const rows=e.currentTarget._leoRows||[];showLeoResult(rows[Number(b.dataset.leoOpen)]);}});
   document.addEventListener("click",e=>{const b=e.target.closest("[data-leo-action]");if(b)openBoloForm(b.dataset.leoAction==="vehicle-bolo"?"vehicle":"person");});
