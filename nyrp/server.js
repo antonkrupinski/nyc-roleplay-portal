@@ -22,6 +22,8 @@ const DATA_FILE = path.join(DATA_DIR, "profiles.json");
 const DEPARTMENTS_FILE = path.join(DATA_DIR, "departments.json");
 
 loadEnv();
+if (!process.env.DISCORD_REDIRECT_URI) process.env.DISCORD_REDIRECT_URI = "https://nyrp.lol/auth/callback";
+if (!process.env.ROBLOX_REDIRECT_URI) process.env.ROBLOX_REDIRECT_URI = "https://nyrp.lol/auth/roblox/callback";
 const PORT = Number(process.env.PORT || 3000);
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
 if (process.env.VERCEL && !process.env.SESSION_SECRET) {
