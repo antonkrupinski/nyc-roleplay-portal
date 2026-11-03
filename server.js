@@ -966,10 +966,26 @@ function defaultRecord(user) {
       idNo: "NY " + profileIdFor(user.id)
     },
     vehicles: defaultVehicles.map((vehicle) => ({ ...vehicle })),
+    vehicleStatuses: {},
     portfolio: { balance: 3325, holdings: [], transactions: [] },
     licenses: [],
     updatedAt: new Date().toISOString()
   };
+}
+
+function normalizeVehicleStatus(value) {
+  const status = String(value || "").trim().toLowerCase();
+  const statuses = { valid: "Valid", stolen: "Stolen", expired: "Expired" };
+  return statuses[status] || null;
+}
+
+function normalizeVehicleStatuses(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).slice(0, 500).flatMap(([plate, status]) => {
+    const key = String(plate).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const normalizedStatus = normalizeVehicleStatus(status);
+    return key && normalizedStatus ? [[key, normalizedStatus]] : [];
+  }));
 }
 
 function normalizeLicenseClaims(value) {
@@ -1663,12 +1679,50 @@ async function handleRequest(request, response) {
       if (!access.roblox?.robloxId) {
         return sendJson(response, 403, { error: "Link your Roblox account to view your ER:LC vehicles.", code: "roblox_link_required" });
       }
+      let snapshot;
       try {
-        const snapshot = await getErlcVehicleSnapshot();
-        return sendJson(response, 200, liveVehiclesForRobloxUser(snapshot, access.roblox));
+        snapshot = await getErlcVehicleSnapshot();
       } catch {
         return sendJson(response, 503, { error: "Live ER:LC vehicle data is unavailable." });
       }
+      const record = await getRecord(user);
+      return sendJson(response, 200, {
+        ...liveVehiclesForRobloxUser(snapshot, access.roblox),
+        vehicleStatuses: normalizeVehicleStatuses(record.vehicleStatuses)
+      });
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/erlc/vehicles/status") {
+      if (!await requireVerified(response, user)) return;
+      if (!checkOrigin(request, url)) return sendJson(response, 403, { error: "Request origin was not allowed." });
+      const body = await readBody(request);
+      const plate = safeString(body.plate, "", 32);
+      const plateKey = plate.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      const status = normalizeVehicleStatus(body.status);
+      if (!plateKey || !status) return sendJson(response, 400, { error: "Provide a vehicle plate and a status of Valid, Stolen, or Expired." });
+      const access = await getBotAccess(user.id);
+      if (!access.roblox?.robloxId) {
+        return sendJson(response, 403, { error: "Link your Roblox account before updating vehicle records.", code: "roblox_link_required" });
+      }
+      try {
+        const snapshot = await getErlcVehicleSnapshot();
+        const ownVehicle = liveVehiclesForRobloxUser(snapshot, access.roblox).vehicles
+          .some((vehicle) => vehicle.plate.toUpperCase().replace(/[^A-Z0-9]/g, "") === plateKey);
+        if (!ownVehicle) return sendJson(response, 404, { error: "That plate is not one of your currently listed ER:LC vehicles." });
+      } catch {
+        return sendJson(response, 503, { error: "Live ER:LC vehicle ownership could not be verified." });
+      }
+      await updateProfileRecord(user.id, () => defaultRecord(user), (previous) => ({
+        record: {
+          ...previous,
+          vehicleStatuses: {
+            ...normalizeVehicleStatuses(previous.vehicleStatuses),
+            [plateKey]: status
+          },
+          updatedAt: new Date().toISOString()
+        }
+      }), readLegacyProfiles);
+      return sendJson(response, 200, { plate: plateKey, status });
     }
 
     if (request.method === "GET" && url.pathname === "/api/market") {
@@ -2431,4 +2485,14 @@ if (require.main === module) {
   startDepartmentResetTimer();
 }
 
-module.exports = { checkOrigin, handleRequest, licenseCatalog, searchRobloxUsers, serveFile, server, startServer };
+module.exports = {
+  checkOrigin,
+  handleRequest,
+  licenseCatalog,
+  normalizeVehicleStatus,
+  normalizeVehicleStatuses,
+  searchRobloxUsers,
+  serveFile,
+  server,
+  startServer
+};

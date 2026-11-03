@@ -1031,15 +1031,31 @@ async function refreshLiveVehicles() {
   try {
     const data = await requestJson("/api/erlc/vehicles");
     const liveVehicles = Array.isArray(data.vehicles) ? data.vehicles : [];
+    const sharedStatuses = data.vehicleStatuses && typeof data.vehicleStatuses === "object"
+      ? data.vehicleStatuses
+      : {};
     const merged = [];
     const seen = new Set();
 
-    liveVehicles.forEach((vehicle) => {
+    for (const vehicle of liveVehicles) {
       const key = String(vehicle.plate || vehicle.id);
-      if (!key) return;
+      if (!key) continue;
       seen.add(key);
-      merged.push({ ...vehicle, status: normalizeVehicleStatus(savedStatuses[key] || vehicle.status || "Valid") });
-    });
+      const plateKey = key.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      let sharedStatus = sharedStatuses[plateKey];
+      if (!sharedStatus && savedStatuses[key]) {
+        try {
+          const saved = await requestJson("/api/erlc/vehicles/status", {
+            method: "POST",
+            body: JSON.stringify({ plate: key, status: normalizeVehicleStatus(savedStatuses[key]) })
+          });
+          sharedStatus = saved.status;
+        } catch (error) {
+          showToast("Could not sync this vehicle status to the shared CAD: " + error.message);
+        }
+      }
+      merged.push({ ...vehicle, status: normalizeVehicleStatus(sharedStatus || savedStatuses[key] || vehicle.status || "Valid") });
+    }
 
     cachedVehicles.forEach((vehicle) => {
       const key = String(vehicle.plate || vehicle.id);
@@ -2100,7 +2116,31 @@ async function initialize() {
       await loadDepartmentPage(activeDepartment.department.id);
     }
   });
-  document.addEventListener("click", e=>{const b=e.target.closest("[data-vehicle-status]");if(!b)return;const key=b.dataset.vehicleStatus;const current=vehicles.find(v=>String(v.plate||v.id)===key);if(!current)return;const statusOrder=["Valid","Stolen","Expired"];const currentStatus=normalizeVehicleStatus(current.status);const currentIndex=statusOrder.indexOf(currentStatus);const next=statusOrder[(currentIndex === -1 ? 0 : currentIndex + 1) % statusOrder.length];const statuses=readVehicleStatusMap();statuses[key]=next;writeVehicleStatusMap(statuses);current.status=next;persistVehicleList(vehicles);renderVehicles();showToast(`Vehicle status updated to ${next}.`);});
+  document.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-vehicle-status]");
+    if (!button) return;
+    const key = button.dataset.vehicleStatus;
+    const current = vehicles.find((vehicle) => String(vehicle.plate || vehicle.id) === key);
+    if (!current) return;
+    const statusOrder = ["Valid", "Stolen", "Expired"];
+    const currentIndex = statusOrder.indexOf(normalizeVehicleStatus(current.status));
+    const next = statusOrder[(currentIndex + 1) % statusOrder.length];
+    try {
+      const result = await requestJson("/api/erlc/vehicles/status", {
+        method: "POST",
+        body: JSON.stringify({ plate: key, status: next })
+      });
+      const statuses = readVehicleStatusMap();
+      statuses[key] = result.status;
+      writeVehicleStatusMap(statuses);
+      current.status = result.status;
+      persistVehicleList(vehicles);
+      renderVehicles();
+      showToast(`Shared CAD vehicle status updated to ${result.status}.`);
+    } catch (error) {
+      showToast(error.message);
+    }
+  });
     $("#leo-search-form")?.addEventListener("submit", e=>{e.preventDefault();const f=new FormData(e.currentTarget);searchLeo(f.get("type"),f.get("query"));});
   $("#leo-results")?.addEventListener("click",e=>{const b=e.target.closest("[data-leo-open]");if(b){const rows=e.currentTarget._leoRows||[];showLeoResult(rows[Number(b.dataset.leoOpen)]);}});
   document.addEventListener("click",e=>{const b=e.target.closest("[data-leo-action]");if(b)openBoloForm(b.dataset.leoAction==="vehicle-bolo"?"vehicle":"person");});
