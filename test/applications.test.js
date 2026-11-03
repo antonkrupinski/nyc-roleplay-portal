@@ -148,6 +148,7 @@ test("the management page is absent from navigation and both portal copies suppo
     const client = fs.readFileSync(path.join(appRoot, "app.js"), "utf8");
     const server = fs.readFileSync(path.join(appRoot, "server.js"), "utf8");
     const store = fs.readFileSync(path.join(appRoot, "firestore-store.js"), "utf8");
+    const styles = fs.readFileSync(path.join(appRoot, "styles.css"), "utf8");
 
     assert.match(html, /data-page="applications"/);
     assert.match(html, /data-page="apply"/);
@@ -156,6 +157,9 @@ test("the management page is absent from navigation and both portal copies suppo
     assert.match(client, /data-edit-application/);
     assert.match(client, /data-delete-application/);
     assert.match(client, /method: editing \? "PUT" : "POST"/);
+    assert.match(styles, /body:is\(\[data-page="applications"\], \[data-page="apply"\]\) \.sidebar/);
+    assert.match(styles, /body:is\(\[data-page="applications"\], \[data-page="apply"\]\) \.topbar/);
+    assert.match(styles, /body:is\(\[data-page="applications"\], \[data-page="apply"\]\) \.main-area \{ margin-left: 0/);
     assert.match(server, /1567209306317791442/);
     assert.match(server, /createApplicationSubmission/);
     assert.match(server, /managedApplicationFormMatch/);

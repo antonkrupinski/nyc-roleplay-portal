@@ -1338,3 +1338,19 @@ dialog[open] { animation: popup-in .24s var(--ease-ui) both; }
 @keyframes soft-pulse { 0%,100% { box-shadow: 0 0 0 0 #10a37f00; } 50% { box-shadow: 0 0 0 5px #10a37f18; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
 @media (max-width: 760px) { .sidebar { background: #f7f7f8 !important; } }
+
+body:is([data-page="applications"], [data-page="apply"]) .sidebar,
+body:is([data-page="applications"], [data-page="apply"]) .topbar { display: none; }
+body:is([data-page="applications"], [data-page="apply"]) .main-area { margin-left: 0; min-height: 100vh; }
+body:is([data-page="applications"], [data-page="apply"]) .page-content {
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  padding: clamp(24px, 4vw, 56px) clamp(18px, 5vw, 72px);
+}
+body[data-page="applications"] .application-builder-grid { grid-template-columns: minmax(0,1.35fr) minmax(320px,.65fr); }
+body[data-page="apply"] #public-application-page { max-width: 1120px; margin: 0 auto; }
+body[data-page="apply"] .public-application-form { max-width: none; }
+@media (max-width: 850px) {
+  body[data-page="applications"] .application-builder-grid { grid-template-columns: minmax(0,1fr); }
+}

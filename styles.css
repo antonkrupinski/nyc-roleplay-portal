@@ -1209,3 +1209,19 @@ input, select, textarea { background: #0d0d10; border-color: #303036; color: #f4
   .application-rating-list span { min-height: 34px; font-size: 10px; }
   .public-application-form { padding: 16px; }
 }
+
+body:is([data-page="applications"], [data-page="apply"]) .sidebar,
+body:is([data-page="applications"], [data-page="apply"]) .topbar { display: none; }
+body:is([data-page="applications"], [data-page="apply"]) .main-area { margin-left: 0; min-height: 100vh; }
+body:is([data-page="applications"], [data-page="apply"]) .page-content {
+  width: 100%;
+  max-width: none;
+  min-height: 100vh;
+  padding: clamp(24px, 4vw, 56px) clamp(18px, 5vw, 72px);
+}
+body[data-page="applications"] .application-builder-grid { grid-template-columns: minmax(0,1.35fr) minmax(320px,.65fr); }
+body[data-page="apply"] #public-application-page { max-width: 1120px; margin: 0 auto; }
+body[data-page="apply"] .public-application-form { max-width: none; }
+@media (max-width: 850px) {
+  body[data-page="applications"] .application-builder-grid { grid-template-columns: minmax(0,1fr); }
+}
