@@ -52,14 +52,17 @@ async function getVerificationAccess(discordId) {
     db.collection("verificationRequests").doc(id).get()
   ]);
   const member = memberSnapshot.exists ? memberSnapshot.data() : {};
+  const link = linkSnapshot.exists ? linkSnapshot.data() : null;
   const request = requestSnapshot.exists ? requestSnapshot.data() : {};
+  const requestStatus = typeof request.status === "string" ? request.status.toLowerCase() : "";
+  const verifiedByRequest = ["approved", "completed", "success", "verified", "accepted"].includes(requestStatus);
   return {
     available: true,
     member: member.member === true,
-    verified: member.verified === true,
-    roblox: linkSnapshot.exists ? linkSnapshot.data() : null,
-    verificationPending: ["pending", "processing"].includes(request.status),
-    verificationError: request.status === "failed" ? request.error || "verification_failed" : null
+    verified: member.verified === true || verifiedByRequest,
+    roblox: link,
+    verificationPending: ["pending", "processing"].includes(requestStatus),
+    verificationError: requestStatus === "failed" ? request.error || "verification_failed" : null
   };
 }
 
