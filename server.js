@@ -356,6 +356,33 @@ function parseErlcPlayerIdentity(value) {
   return { username: identity, robloxId: null };
 }
 
+function normalizeErlcLiveMapPlayers(players) {
+  if (!Array.isArray(players)) return [];
+  return players.slice(0, 200).flatMap((player) => {
+    const identity = parseErlcPlayerIdentity(player?.Player);
+    if (!identity) return [];
+    const location = player.Location && typeof player.Location === "object" ? player.Location : {};
+    const locationX = location.LocationX === null || location.LocationX === undefined || location.LocationX === ""
+      ? NaN
+      : Number(location.LocationX);
+    const locationZ = location.LocationZ === null || location.LocationZ === undefined || location.LocationZ === ""
+      ? NaN
+      : Number(location.LocationZ);
+    const streetName = safeString(location.StreetName, "", 80);
+    const buildingNumber = safeString(location.BuildingNumber, "", 20);
+    return [{
+      username: safeString(identity.username, "Unknown player", 32),
+      callsign: safeString(player.Callsign, "", 32),
+      team: safeString(player.Team, "Unknown", 40),
+      streetName,
+      buildingNumber,
+      postalCode: safeString(location.PostalCode, "", 16),
+      locationX: Number.isFinite(locationX) ? locationX : null,
+      locationZ: Number.isFinite(locationZ) ? locationZ : null
+    }];
+  });
+}
+
 function liveVehiclesForRobloxUser(snapshot, linkedAccount) {
   const linkedId = linkedAccount.robloxId;
   const linkedUsername = safeString(linkedAccount.robloxUsername, "", 32);
@@ -881,6 +908,10 @@ function findDepartment(state, departmentId) {
 
 function findDepartmentMember(department, discordId) {
   return (department?.members || []).find((member) => member.discordId === discordId) || null;
+}
+
+function isPoliceDepartmentName(name = "") {
+  return /NYPD|NYSP|COAST\s*GUARD|NYPP/i.test(String(name));
 }
 
 function getMemberRole(department, member) {
@@ -1666,6 +1697,24 @@ async function handleRequest(request, response) {
       return sendJson(response, 201, { license: outcome.claim });
     }
 
+    if (request.method === "GET" && url.pathname === "/api/erlc/live-map") {
+      if (!await requireVerified(response, user)) return;
+      const onDuty = await withDepartmentState((state) => state.departments.some((department) =>
+        isPoliceDepartmentName(department.name) &&
+        Boolean(findDepartmentMember(department, user.id)?.activeShift?.startedAt)
+      ));
+      if (!onDuty) return sendJson(response, 403, { error: "An active law-enforcement shift is required to view the live map." });
+      try {
+        const snapshot = await getErlcVehicleSnapshot();
+        return sendJson(response, 200, {
+          players: normalizeErlcLiveMapPlayers(snapshot.players),
+          updatedAt: snapshot.updatedAt
+        });
+      } catch {
+        return sendJson(response, 503, { error: "Live ER:LC player locations are unavailable right now." });
+      }
+    }
+
     if (request.method === "GET" && url.pathname === "/api/erlc/server") {
       if (!await requireVerified(response, user)) return;
       try {
@@ -1816,6 +1865,10 @@ async function handleRequest(request, response) {
       if (!await requireVerified(response, user)) return;
       const result = await withDepartmentState((state) => ({
         seniorHighRanking: isSeniorHighRanking(user),
+        policeOnDuty: state.departments.some((department) =>
+          isPoliceDepartmentName(department.name) &&
+          Boolean(findDepartmentMember(department, user.id)?.activeShift?.startedAt)
+        ),
         departments: state.departments.map((department) => ({
           id: department.id,
           name: department.name,
@@ -2491,6 +2544,7 @@ module.exports = {
   checkOrigin,
   handleRequest,
   licenseCatalog,
+  normalizeErlcLiveMapPlayers,
   normalizeVehicleStatus,
   normalizeVehicleStatuses,
   searchRobloxUsers,

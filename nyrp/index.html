@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css?v=1.2.3">
+    <link rel="stylesheet" href="/styles.css?v=1.2.5">
   </head>
   <body>
     <div class="app-shell">
@@ -37,6 +37,7 @@
         <div class="nav-section" id="leo-nav-section" hidden>
           <span class="nav-label">LEO</span>
           <nav aria-label="Law enforcement tools">
+            <a class="nav-link" href="#live-map" data-route="live-map"><span class="nav-icon">⌖</span>Live Map</a>
             <a class="nav-link" href="#leo" data-route="leo"><span class="nav-icon">▣</span>MDT</a>
             <a class="nav-link" href="#bolos" data-route="bolos"><span class="nav-icon">⚑</span>BOLOs</a>
           </nav>
@@ -282,6 +283,46 @@
             <section class="content-panel vehicles-panel garage-page-panel"><div class="panel-heading"><div class="panel-title"><span class="panel-icon">▰</span><div><h2>My garage</h2><p>Current vehicles on the ER:LC server</p></div><span class="count-pill" id="vehicle-count-page">00</span></div></div><div class="vehicle-list" id="vehicle-list-page"></div><div class="panel-foot"><span class="tiny-dot"></span><span class="garage-source">CONNECTING TO ER:LC</span><span class="panel-foot-spacer"></span><span id="garage-count-page">00 RECORDS</span></div></section>
           </section>
 
+          <section class="route-page" data-page="live-map">
+            <div class="page-heading live-map-heading">
+              <div><div class="eyebrow"><span>ER:LC LIVE DATA</span><i></i><span>FIELD OPERATIONS</span></div><h1>Live Map<span class="heading-period">.</span></h1><p class="heading-subtitle">See active units and their current server locations. Updates about every 20 seconds.</p></div>
+              <span class="live-map-beta"><span class="live-pulse"></span> LIVE FEED</span>
+            </div>
+            <section class="live-map-layout" aria-label="Live server map and player roster">
+              <article class="live-map-card">
+                <div class="live-map-toolbar">
+                  <label class="live-map-search"><span aria-hidden="true">⌕</span><input id="live-map-search" type="search" placeholder="Find a player in the server" autocomplete="off" aria-label="Find a player in the server"></label>
+                  <span class="live-map-feed-state" id="live-map-feed-state"><i></i><span>Connecting</span></span>
+                  <button class="map-control" type="button" id="live-map-zoom-out" aria-label="Zoom out">−</button>
+                  <button class="map-control" type="button" id="live-map-zoom-in" aria-label="Zoom in">＋</button>
+                  <button class="map-control" type="button" id="live-map-center" aria-label="Center map on active players">⊙</button>
+                  <button class="map-control" type="button" id="live-map-refresh" aria-label="Refresh live map">↻</button>
+                </div>
+                <div class="live-map-viewport" id="live-map-viewport">
+                  <div class="live-map-artboard" id="live-map-artboard">
+                    <img class="live-map-image" src="/assets/erlc-fall-postals.webp" alt="Official ER:LC map with postal codes" draggable="false">
+                    <div class="live-map-markers" id="live-map-markers"></div>
+                  </div>
+                  <div class="live-map-empty" id="live-map-empty">Loading live player locations…</div>
+                  <span class="live-map-located" id="live-map-located">0 located</span>
+                </div>
+                <div class="live-map-foot"><span>Map © Emergency Response: Liberty County</span><span id="live-map-updated">Waiting for live data</span></div>
+              </article>
+              <aside class="live-map-rail">
+                <article class="live-map-side-card" id="live-map-selected-card">
+                  <div class="live-map-side-head"><span class="live-map-pin-icon">⌖</span><h2>Selected player</h2></div>
+                  <div class="live-map-selected-content" id="live-map-selected">
+                    <p>Select a player on the map or in the roster to see their details.</p>
+                  </div>
+                </article>
+                <article class="live-map-side-card live-map-roster-card">
+                  <div class="live-map-side-head"><span class="live-map-roster-icon">♧</span><h2>In the server</h2><span class="live-map-roster-count" id="live-map-player-count">0</span></div>
+                  <div class="live-map-player-list" id="live-map-player-list"><div class="live-map-roster-empty">Waiting for server players…</div></div>
+                </article>
+              </aside>
+            </section>
+          </section>
+
           <section class="route-page" data-page="city-hall">
             <div class="page-heading"><div><div class="eyebrow"><span>CITY DEPARTMENTS</span><i></i><span>RESIDENT SERVICES</span></div><h1>City Hall<span class="heading-period">.</span></h1><p class="heading-subtitle">The front door to city services and resident information.</p></div></div>
             <div class="directory-grid"><article class="directory-card"><span class="directory-icon">✦</span><span class="section-kicker">RESIDENT SERVICES</span><h2>City records</h2><p>Keep your resident profile and character details up to date.</p><button class="text-link" type="button" data-route="profile">Open your profile <span>→</span></button></article><article class="directory-card"><span class="directory-icon">▰</span><span class="section-kicker">TRANSPORTATION</span><h2>Vehicle registry</h2><p>Manage the vehicles connected to your city identity.</p><button class="text-link" type="button" data-route="vehicles">Visit the garage <span>→</span></button></article><article class="directory-card"><span class="directory-icon">▤</span><span class="section-kicker">PERMITS</span><h2>Licenses</h2><p>Review your roleplay permits and resident credentials.</p><button class="text-link" type="button" data-route="licenses">View licenses <span>→</span></button></article></div>
@@ -482,6 +523,6 @@
         <div class="connect-foot"><span>PRIVATE BY DEFAULT</span><i>·</i><span>ROLEPLAY ONLY</span><i>·</i><span>MADE FOR NYC</span></div>
       </form>
     </dialog>
-  <script src="/app.js?v=1.0.36"></script>
+  <script src="/app.js?v=1.0.39"></script>
   </body>
 </html>

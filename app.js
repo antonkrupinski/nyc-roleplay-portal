@@ -25,6 +25,7 @@ const pageInfo = {
   shop: { title: "Shop", section: "City storefront" },
   vehicles: { title: "Vehicles", section: "Civilian" },
   "city-hall": { title: "City Hall", section: "City departments" },
+  "live-map": { title: "Live Map", section: "Law enforcement" },
   leo: { title: "Police MDT", section: "Law enforcement" },
   bolos: { title: "BOLOs", section: "Law enforcement" },
   moderation: { title: "Moderation", section: "Staff tools" },
@@ -59,6 +60,13 @@ let activeAdminTab = "overview";
 let moderationShift = { totalMinutes: 0, activeShift: null, shiftHistory: [] };
 let selectedModerationUser = null;
 let moderationShiftTimer = null;
+let liveMapPlayers = [];
+let selectedLiveMapPlayer = "";
+let liveMapZoom = 1;
+let liveMapLoading = false;
+let liveMapPanX = 0;
+let liveMapPanY = 0;
+let liveMapDragStart = null;
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const profileModal = $("#profile-modal");
@@ -83,8 +91,13 @@ function showToast(message) {
 }
 
 function activatePage(requestedPage, updateHistory = false) {
+  const policeOnDuty = Boolean(currentUser?.policeOnDuty || (
+    activeDepartment?.membership?.activeShift &&
+    isPoliceDepartment(activeDepartment.department?.name)
+  ));
   const allowedPage = requestedPage === "moderation" && !currentUser?.moderationAccess ||
     requestedPage === "applications" && !currentUser?.applicationManagerAccess
+    || ["live-map", "leo", "bolos"].includes(requestedPage) && !policeOnDuty
     ? "profile"
     : requestedPage;
   const page = Object.hasOwn(pageInfo, allowedPage) || Object.hasOwn(departmentPageInfo, allowedPage) ? allowedPage : "profile";
@@ -114,6 +127,7 @@ function activatePage(requestedPage, updateHistory = false) {
   if (page === "licenses" && currentUser) void loadLicenses();
   if (page === "applications" && currentUser?.applicationManagerAccess) void loadApplicationForms();
   if (page === "apply" && currentUser) void loadPublicApplication();
+  if (page === "live-map") void loadLiveMap();
 }
 
 function currentPageFromHash() {
@@ -576,6 +590,7 @@ async function loadDepartments() {
   try {
     const data = await requestJson("/api/departments");
     departments = Array.isArray(data.departments) ? data.departments : [];
+    if (currentUser) currentUser.policeOnDuty = Boolean(data.policeOnDuty);
     departmentPageInfo = {};
     departments.forEach((department) => {
       departmentPageInfo[departmentRoute(department.id)] = { title: department.name, section: "City departments" };
@@ -585,6 +600,7 @@ async function loadDepartments() {
     if (isAdmin) pageInfo.admin = { title: "Admin", section: "Senior High Ranking" };
     else delete pageInfo.admin;
     renderDepartmentNavigation();
+    updateLeoAccess();
     return true;
   } catch (error) {
     departments = [];
@@ -1414,6 +1430,116 @@ async function refreshErlcStatus() {
   }
 }
 
+function liveMapTeamColor(team) {
+  if (/police|state|sheriff/i.test(team)) return "#61b8e4";
+  if (/fire|ems|medical/i.test(team)) return "#ed7770";
+  if (/dot|transport/i.test(team)) return "#efb257";
+  if (/civilian/i.test(team)) return "#c8ccd0";
+  return "#9a91e8";
+}
+
+function liveMapLocation(player) {
+  const street = [player.buildingNumber, player.streetName].filter(Boolean).join(" ");
+  return [street, player.postalCode ? "Postal " + player.postalCode : ""].filter(Boolean).join(" · ") || "Location unavailable";
+}
+
+function updateLiveMapTransform() {
+  const artboard = $("#live-map-artboard");
+  if (artboard) {
+    artboard.style.transform = `translate(calc(-50% + ${liveMapPanX}px), calc(-50% + ${liveMapPanY}px)) scale(${liveMapZoom})`;
+  }
+}
+
+function renderLiveMap() {
+  const search = ($("#live-map-search")?.value || "").trim().toLowerCase();
+  const filtered = liveMapPlayers.filter((player) =>
+    [player.username, player.callsign, player.team, player.streetName, player.postalCode]
+      .some((value) => String(value || "").toLowerCase().includes(search))
+  );
+  if (!filtered.some((player) => player.username === selectedLiveMapPlayer)) selectedLiveMapPlayer = "";
+  const located = filtered.filter((player) => Number.isFinite(player.locationX) && Number.isFinite(player.locationZ));
+  const markerRoot = $("#live-map-markers");
+  const playerList = $("#live-map-player-list");
+  if (!markerRoot || !playerList) return;
+
+  markerRoot.innerHTML = located.map((player) => {
+    const x = Math.max(0, Math.min(100, ((player.locationX + 2677.5) / 5355) * 100));
+    const y = Math.max(0, Math.min(100, ((player.locationZ + 2677.5) / 5355) * 100));
+    const color = liveMapTeamColor(player.team);
+    const selected = player.username === selectedLiveMapPlayer;
+    return `<button class="live-map-marker ${selected ? "is-selected" : ""}" type="button" style="left:${x}%;top:${y}%;--player-color:${color}" data-live-map-player="${escapeHtml(player.username)}" aria-label="Select ${escapeHtml(player.username)} at ${escapeHtml(liveMapLocation(player))}"><span class="live-map-marker-dot"></span><span class="live-map-marker-label">${escapeHtml(player.callsign || player.username)}</span></button>`;
+  }).join("");
+
+  playerList.innerHTML = filtered.length ? filtered.map((player) => {
+    const color = liveMapTeamColor(player.team);
+    const selected = player.username === selectedLiveMapPlayer;
+    return `<button class="live-map-player-row ${selected ? "is-selected" : ""}" type="button" style="--player-color:${color}" data-live-map-player="${escapeHtml(player.username)}"><i class="live-map-team-dot"></i><strong>${escapeHtml(player.callsign || player.username)}</strong><small>${escapeHtml(player.team)}</small></button>`;
+  }).join("") : `<div class="live-map-roster-empty">${search ? "No players match your search." : "No players are currently listed."}</div>`;
+
+  const playerCount = $("#live-map-player-count");
+  if (playerCount) playerCount.textContent = String(liveMapPlayers.length);
+  const locatedCount = $("#live-map-located");
+  if (locatedCount) locatedCount.textContent = located.length + " located";
+  const empty = $("#live-map-empty");
+  if (empty) {
+    empty.hidden = located.length > 0;
+    empty.textContent = liveMapPlayers.length
+      ? search && !filtered.length
+        ? "No players match your search."
+        : "The live feed has no map coordinates for these players."
+      : "No players are currently in the server.";
+  }
+
+  const selected = liveMapPlayers.find((player) => player.username === selectedLiveMapPlayer);
+  const selectedContent = $("#live-map-selected");
+  if (selectedContent) {
+    selectedContent.innerHTML = selected
+      ? `<div class="live-map-player-detail"><strong>${escapeHtml(selected.callsign || selected.username)}</strong><small>${escapeHtml(selected.username)} · ${escapeHtml(selected.team)}</small><span>${escapeHtml(liveMapLocation(selected))}</span></div>`
+      : "<p>Select a player on the map or in the roster to see their details.</p>";
+  }
+}
+
+async function loadLiveMap(quiet = false) {
+  if (liveMapLoading || !currentUser || document.body.dataset.page !== "live-map") return;
+  liveMapLoading = true;
+  const state = $("#live-map-feed-state");
+  const message = $("#live-map-empty");
+  if (state && !quiet) {
+    state.classList.remove("is-error");
+    state.querySelector("span").textContent = "Updating";
+  }
+  if (message && !liveMapPlayers.length) {
+    message.hidden = false;
+    message.textContent = "Loading live player locations…";
+  }
+  try {
+    const data = await requestJson("/api/erlc/live-map");
+    liveMapPlayers = Array.isArray(data.players) ? data.players : [];
+    if (!liveMapPlayers.some((player) => player.username === selectedLiveMapPlayer)) selectedLiveMapPlayer = "";
+    renderLiveMap();
+    if (state) {
+      state.classList.remove("is-error");
+      state.querySelector("span").textContent = "Live · 20s";
+    }
+    const updated = $("#live-map-updated");
+    if (updated) updated.textContent = "Updated " + new Date(data.updatedAt).toLocaleTimeString();
+  } catch (error) {
+    if (state) {
+      state.classList.add("is-error");
+      state.querySelector("span").textContent = "Unavailable";
+    }
+    if (!liveMapPlayers.length && message) {
+      message.hidden = false;
+      message.textContent = error.message;
+    } else if (message) {
+      message.hidden = true;
+      if (!quiet) showToast("Live map could not refresh. Showing the last available player locations.");
+    }
+  } finally {
+    liveMapLoading = false;
+  }
+}
+
 function escapeXml(value) {
   return String(value || "").replace(/[<>&'"]/g, (character) => ({
     "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;"
@@ -1584,9 +1710,12 @@ function writeStore(key, value) { localStorage.setItem(key, JSON.stringify(value
 function isPoliceDepartment(name="") { return /NYPD|NYSP|COAST\s*GUARD|NYPP/i.test(name); }
 function updateLeoAccess() {
   const section = $("#leo-nav-section"); if (!section) return;
-  const onDuty = Boolean(activeDepartment?.membership?.activeShift && isPoliceDepartment(activeDepartment.department?.name));
+  const onDuty = Boolean(currentUser?.policeOnDuty || (
+    activeDepartment?.membership?.activeShift &&
+    isPoliceDepartment(activeDepartment.department?.name)
+  ));
   section.hidden = !onDuty;
-  if (!onDuty && ["leo", "bolos"].includes(document.body.dataset.page)) activatePage("profile", true);
+  if (!onDuty && ["live-map", "leo", "bolos"].includes(document.body.dataset.page)) activatePage("profile", true);
 }
 function renderBolos() {
   const root = $("#bolo-list"); if (!root) return;
@@ -2143,7 +2272,52 @@ async function initialize() {
   });
     $("#leo-search-form")?.addEventListener("submit", e=>{e.preventDefault();const f=new FormData(e.currentTarget);searchLeo(f.get("type"),f.get("query"));});
   $("#leo-results")?.addEventListener("click",e=>{const b=e.target.closest("[data-leo-open]");if(b){const rows=e.currentTarget._leoRows||[];showLeoResult(rows[Number(b.dataset.leoOpen)]);}});
-  document.addEventListener("click",e=>{const b=e.target.closest("[data-leo-action]");if(b)openBoloForm(b.dataset.leoAction==="vehicle-bolo"?"vehicle":"person");});
+    $("#live-map-search")?.addEventListener("input", renderLiveMap);
+    $("#live-map-refresh")?.addEventListener("click", () => void loadLiveMap());
+    $("#live-map-zoom-in")?.addEventListener("click", () => {
+      liveMapZoom = Math.min(2.4, liveMapZoom + 0.2);
+      updateLiveMapTransform();
+    });
+    $("#live-map-zoom-out")?.addEventListener("click", () => {
+      liveMapZoom = Math.max(0.8, liveMapZoom - 0.2);
+      updateLiveMapTransform();
+    });
+    $("#live-map-center")?.addEventListener("click", () => {
+      liveMapZoom = 1;
+      liveMapPanX = 0;
+      liveMapPanY = 0;
+      updateLiveMapTransform();
+    });
+    const mapViewport = $("#live-map-viewport");
+    mapViewport?.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || event.target.closest("[data-live-map-player]")) return;
+      liveMapDragStart = { x: event.clientX - liveMapPanX, y: event.clientY - liveMapPanY };
+      mapViewport.setPointerCapture(event.pointerId);
+    });
+    mapViewport?.addEventListener("pointermove", (event) => {
+      if (!liveMapDragStart) return;
+      const maxX = mapViewport.clientWidth / 2;
+      const maxY = mapViewport.clientHeight / 2;
+      liveMapPanX = Math.max(-maxX, Math.min(maxX, event.clientX - liveMapDragStart.x));
+      liveMapPanY = Math.max(-maxY, Math.min(maxY, event.clientY - liveMapDragStart.y));
+      mapViewport.classList.add("is-dragging");
+      updateLiveMapTransform();
+    });
+    for (const eventName of ["pointerup", "pointercancel", "lostpointercapture"]) {
+      mapViewport?.addEventListener(eventName, () => {
+        liveMapDragStart = null;
+        mapViewport.classList.remove("is-dragging");
+      });
+    }
+    for (const root of [$("#live-map-markers"), $("#live-map-player-list")]) {
+      root?.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-live-map-player]");
+        if (!button) return;
+        selectedLiveMapPlayer = button.dataset.liveMapPlayer;
+        renderLiveMap();
+      });
+    }
+    document.addEventListener("click",e=>{const b=e.target.closest("[data-leo-action]");if(b)openBoloForm(b.dataset.leoAction==="vehicle-bolo"?"vehicle":"person");});
   renderBolos();
   window.addEventListener("popstate", () => activatePage(currentPageFromHash()));
   window.addEventListener("hashchange", () => activatePage(currentPageFromHash()));
@@ -2153,6 +2327,7 @@ async function initialize() {
   refreshErlcStatus();
   window.setInterval(() => fetchMarketData(), 60_000);
   window.setInterval(() => refreshErlcStatus(), 60_000);
+  window.setInterval(() => { if (currentUser && document.body.dataset.page === "live-map") void loadLiveMap(true); }, 20_000);
   window.setInterval(() => { if (currentUser) void refreshLiveVehicles(); }, 30_000);
   window.setInterval(() => { if (currentUser && document.body.dataset.page === "licenses") void loadLicenses(true); }, 30_000);
   window.setInterval(updateLiveShiftCounters, 30_000);

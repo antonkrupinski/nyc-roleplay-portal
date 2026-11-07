@@ -1355,3 +1355,77 @@ body[data-page="apply"] .public-application-form { max-width: none; }
 @media (max-width: 850px) {
   body[data-page="applications"] .application-builder-grid { grid-template-columns: minmax(0,1fr); }
 }
+
+.live-map-heading { align-items: center; }
+.live-map-heading .heading-subtitle { max-width: 620px; }
+.live-map-beta { display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid rgba(131,180,156,.22); border-radius: 9px; color: #b6c4bd; background: rgba(131,180,156,.07); font-size: 10px; font-weight: 700; letter-spacing: .08em; white-space: nowrap; }
+.live-map-layout { display: grid; grid-template-columns: minmax(0,1fr) 276px; align-items: start; gap: 14px; }
+.live-map-card, .live-map-side-card { overflow: hidden; border: 1px solid var(--line-strong); border-radius: 13px; background: #0e1012; }
+.live-map-toolbar { min-height: 53px; display: flex; align-items: center; gap: 7px; padding: 9px; border-bottom: 1px solid var(--line); }
+.live-map-search { display: flex; align-items: center; gap: 8px; min-width: 140px; flex: 1; height: 34px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: #08090a; color: #878d92; }
+.live-map-search span { font-size: 18px; line-height: 1; }
+.live-map-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 11px; }
+.live-map-search input::placeholder { color: #757b80; }
+.live-map-search input:focus-visible { outline: 0; }
+.live-map-feed-state { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 9px; border: 1px solid rgba(131,180,156,.22); border-radius: 8px; color: #a9c5b5; font-size: 10px; white-space: nowrap; }
+.live-map-feed-state i { width: 6px; height: 6px; border-radius: 50%; background: #78c9a0; box-shadow: 0 0 8px rgba(120,201,160,.5); }
+.live-map-feed-state.is-error { border-color: rgba(210,119,107,.3); color: #d8a19a; }
+.live-map-feed-state.is-error i { background: #d2776b; box-shadow: none; }
+.map-control { width: 31px; height: 31px; flex: 0 0 auto; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: #101214; color: #aaaeb2; cursor: pointer; font-size: 15px; }
+.map-control:hover { border-color: rgba(255,255,255,.2); color: #fff; }
+.map-control:disabled { opacity: .45; cursor: default; }
+.live-map-viewport { position: relative; display: grid; place-items: center; height: min(52vw, 620px); min-height: 340px; overflow: hidden; background: #030404; touch-action: none; }
+.live-map-viewport.is-dragging { cursor: grabbing; }
+.live-map-artboard { position: absolute; top: 50%; left: 50%; height: 100%; max-height: 100%; aspect-ratio: 1; transform: translate(-50%,-50%) scale(1); transform-origin: center; transition: transform .18s ease-out; }
+.live-map-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; user-select: none; }
+.live-map-markers { position: absolute; inset: 0; }
+.live-map-marker { position: absolute; z-index: 1; display: flex; align-items: center; flex-direction: column; padding: 0; border: 0; background: transparent; color: #fff; cursor: pointer; transform: translate(-50%,-50%); }
+.live-map-marker-dot { width: 11px; height: 11px; border: 2px solid #101214; border-radius: 50%; background: var(--player-color,#75bfe8); box-shadow: 0 0 0 2px rgba(0,0,0,.7), 0 0 12px var(--player-color,#75bfe8); }
+.live-map-marker-label { max-width: 105px; margin-top: 3px; padding: 2px 5px; overflow: hidden; border-radius: 3px; background: rgba(4,5,6,.86); color: #f3f4f4; font-size: 8px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+.live-map-marker:hover, .live-map-marker.is-selected { z-index: 2; }
+.live-map-marker:hover .live-map-marker-dot, .live-map-marker.is-selected .live-map-marker-dot { width: 14px; height: 14px; border-color: white; }
+.live-map-marker.is-selected .live-map-marker-label { color: #fff; background: #111820; outline: 1px solid var(--player-color,#75bfe8); }
+.live-map-empty { position: absolute; z-index: 3; top: 50%; left: 50%; width: min(350px, calc(100% - 30px)); padding: 14px 16px; border: 1px solid var(--line-strong); border-radius: 10px; background: rgba(12,14,16,.94); color: #adb3b8; font-size: 12px; line-height: 1.5; text-align: center; transform: translate(-50%,-50%); }
+.live-map-empty[hidden] { display: none; }
+.live-map-located { position: absolute; bottom: 10px; left: 10px; padding: 6px 9px; border: 1px solid var(--line-strong); border-radius: 7px; background: rgba(5,7,8,.85); color: #c6cacf; font-size: 10px; }
+.live-map-foot { min-height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 11px; border-top: 1px solid var(--line); color: #777e84; font-size: 9px; }
+.live-map-rail { display: grid; gap: 13px; }
+.live-map-side-head { min-height: 42px; display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid var(--line); }
+.live-map-side-head h2 { margin: 0; font-size: 11px; font-weight: 700; }
+.live-map-pin-icon, .live-map-roster-icon { color: #aab4bb; font-size: 15px; }
+.live-map-selected-content { min-height: 75px; padding: 12px; color: #969ca2; font-size: 10px; line-height: 1.55; }
+.live-map-selected-content > p { margin: 7px 0; text-align: center; }
+.live-map-player-detail { display: grid; gap: 7px; }
+.live-map-player-detail strong { color: #ecedef; font-size: 12px; }
+.live-map-player-detail small { color: #858b90; font-size: 10px; }
+.live-map-player-detail span { color: #c3c8cc; }
+.live-map-roster-count { min-width: 22px; margin-left: auto; padding: 3px 6px; border-radius: 6px; background: #1d2023; color: #c5c9cc; font-size: 9px; text-align: center; }
+.live-map-player-list { max-height: 430px; overflow: auto; padding: 4px 8px 8px; }
+.live-map-player-row { width: 100%; min-height: 28px; display: flex; align-items: center; gap: 7px; padding: 4px 4px; border: 0; border-radius: 6px; background: transparent; color: #c8cbd0; text-align: left; cursor: pointer; }
+.live-map-player-row:hover, .live-map-player-row.is-selected { background: #191c1f; }
+.live-map-player-row strong { min-width: 0; overflow: hidden; font-size: 9px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.live-map-player-row small { max-width: 85px; margin-left: auto; overflow: hidden; color: #838990; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.live-map-team-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: var(--player-color,#75bfe8); }
+.live-map-roster-empty { padding: 16px 6px; color: #888e94; font-size: 10px; text-align: center; }
+@media (max-width: 1080px) {
+  .live-map-layout { grid-template-columns: minmax(0,1fr) 240px; }
+  .live-map-viewport { min-height: 380px; }
+  .live-map-feed-state { padding: 0 7px; }
+}
+@media (max-width: 780px) {
+  .live-map-layout { grid-template-columns: minmax(0,1fr); }
+  .live-map-rail { grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: start; }
+  .live-map-roster-card { grid-row: span 2; }
+}
+@media (max-width: 560px) {
+  .live-map-heading { align-items: flex-start; }
+  .live-map-beta { display: none; }
+  .live-map-toolbar { flex-wrap: wrap; }
+  .live-map-search { flex-basis: calc(100% - 8px); }
+  .live-map-feed-state { margin-right: auto; }
+  .live-map-viewport { min-height: 340px; }
+  .live-map-rail { grid-template-columns: minmax(0,1fr); }
+  .live-map-roster-card { grid-row: auto; }
+  .live-map-player-list { max-height: 280px; }
+  .live-map-foot { align-items: flex-start; flex-direction: column; justify-content: center; gap: 3px; padding: 7px 11px; }
+}
