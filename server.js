@@ -1204,8 +1204,12 @@ function parseErlcCommandPayload(payload) {
     }
     if (message) break;
   }
-  const commandMatch = message.match(/^;\s*(staff|scene|traffic)(?:\s+(.+?))?\s*$/i);
+  const commandMatch = message.match(/^;\s*(staff|mod[\s_-]*scene|ms|scene|s|traffic)(?:\s+(.+?))?\s*$/i);
   if (!commandMatch) return null;
+  const commandAlias = commandMatch[1].toLowerCase().replace(/[\s_-]+/g, "");
+  const command = commandAlias === "s" ? "scene"
+    : commandAlias === "ms" || commandAlias === "modscene" ? "staff"
+      : commandAlias;
   let radiusStuds = null;
   const radiusArgument = String(commandMatch[2] || "").trim();
   if (radiusArgument) {
@@ -1249,7 +1253,7 @@ function parseErlcCommandPayload(payload) {
     if (robloxId && playerName) break;
   }
   if (!robloxId && !playerName) return null;
-  return { command: commandMatch[1].toLowerCase(), playerName, robloxId, radiusStuds };
+  return { command, playerName, robloxId, radiusStuds };
 }
 
 function checkOrigin(request, url) {
