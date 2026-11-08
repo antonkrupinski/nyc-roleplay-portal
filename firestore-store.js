@@ -171,7 +171,7 @@ async function createVerificationRequest(discordId, roblox) {
 
 async function enqueueErlcVoiceCommand(eventId, command) {
   if (!/^[a-f0-9]{64}$/.test(String(eventId))) throw new Error("Invalid ER:LC voice command event ID.");
-  if (!command || !["staff", "scene", "traffic"].includes(command.command)) throw new Error("Invalid ER:LC voice command.");
+  if (!command || !["staff", "scene", "traffic", "priority-end"].includes(command.command)) throw new Error("Invalid ER:LC voice command.");
   const radiusStuds = command.radiusStuds == null ? null : Number(command.radiusStuds);
   if (radiusStuds !== null && (!Number.isFinite(radiusStuds) || radiusStuds < 1 || radiusStuds > 10_000)) {
     throw new Error("Invalid ER:LC voice command radius.");

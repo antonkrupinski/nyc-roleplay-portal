@@ -1197,21 +1197,29 @@ function parseErlcCommandPayload(payload) {
   let message = "";
   for (const object of objects) {
     for (const [key, value] of Object.entries(object)) {
-      if (messageKeys.has(key.replace(/[^a-z]/gi, "").toLowerCase()) && typeof value === "string" && /^\s*;/.test(value)) {
+      if (messageKeys.has(key.replace(/[^a-z]/gi, "").toLowerCase()) && typeof value === "string" && /^\s*[;!]/.test(value)) {
         message = value.trim();
         break;
       }
     }
     if (message) break;
   }
+  const priorityEndMatch = message.match(/^!\s*prtyend\s*$/i);
   const commandMatch = message.match(/^;\s*(staff|mod[\s_-]*scene|ms|scene|s|traffic)(?:\s+(.+?))?\s*$/i);
-  if (!commandMatch) return null;
-  const commandAlias = commandMatch[1].toLowerCase().replace(/[\s_-]+/g, "");
-  const command = commandAlias === "s" ? "scene"
-    : commandAlias === "ms" || commandAlias === "modscene" ? "staff"
-      : commandAlias;
+  let command;
+  if (priorityEndMatch) {
+    command = "priority-end";
+  } else if (!commandMatch) {
+    return null;
+  }
+  const commandAlias = commandMatch ? commandMatch[1].toLowerCase().replace(/[\s_-]+/g, "") : "";
+  if (!priorityEndMatch) {
+    command = commandAlias === "s" ? "scene"
+      : commandAlias === "ms" || commandAlias === "modscene" ? "staff"
+        : commandAlias;
+  }
   let radiusStuds = null;
-  const radiusArgument = String(commandMatch[2] || "").trim();
+  const radiusArgument = String(commandMatch?.[2] || "").trim();
   if (radiusArgument) {
     if (!/^\d{1,5}(?:\.\d{1,2})?$/.test(radiusArgument)) return null;
     radiusStuds = Number(radiusArgument);
