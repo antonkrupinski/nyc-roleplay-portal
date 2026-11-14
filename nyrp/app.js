@@ -1829,23 +1829,22 @@ function openBoloForm(kind) {
 function setupOnboarding() {
   const gateway = $("#entry-gateway");
   if (!gateway) return;
-  const hasSavedGuest = (() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(profileKey) || "null");
-      return Boolean(saved && saved.name && saved.name !== SAMPLE_PROFILE.name);
-    } catch { return false; }
-  })();
-  const hasExistingAccountCharacter = Boolean(currentUser && profile.name && profile.name !== SAMPLE_PROFILE.name);
-  if (hasSavedGuest || hasExistingAccountCharacter) {
-    gateway.hidden = true;
-    document.body.classList.remove("onboarding-open");
-    return;
-  }
   gateway.hidden = false;
   document.body.classList.add("onboarding-open");
   const choose = $("#gateway-choose");
   const character = $("#gateway-character");
   const form = $("#character-create-form");
+  const existingNames = String(profile.name || "").trim().split(/\\s+/);
+  form.elements.firstName.value = profile.firstName || existingNames[0] || "";
+  form.elements.lastName.value = profile.lastName || existingNames.slice(1).join(" ");
+  form.elements.dob.value = profile.dob && profile.dob !== "—" ? profile.dob : "";
+  form.elements.pronouns.value = profile.pronouns && profile.pronouns !== "—" ? profile.pronouns : "";
+  form.elements.height.value = profile.height && profile.height !== "—" ? profile.height : "";
+  form.elements.weight.value = profile.weight || "";
+  form.elements.eyes.value = profile.eyes && profile.eyes !== "—" ? profile.eyes : "";
+  form.elements.occupation.value = profile.occupation && profile.occupation !== "—" ? profile.occupation : "";
+  form.elements.borough.value = profile.borough || "Manhattan";
+  form.elements.neighborhood.value = profile.neighborhood && profile.neighborhood !== "—" ? profile.neighborhood : "";
   const showCharacter = () => {
     choose.hidden = true;
     character.hidden = false;
