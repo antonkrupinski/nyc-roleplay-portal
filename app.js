@@ -1812,7 +1812,7 @@ function setupOnboarding() {
   const choose = $("#gateway-choose");
   const character = $("#gateway-character");
   const form = $("#character-create-form");
-  const existingNames = String(profile.name || "").trim().split(/\\s+/);
+  const existingNames = String(profile.name || "").trim().split(/\s+/);
   form.elements.firstName.value = profile.firstName || existingNames[0] || "";
   form.elements.lastName.value = profile.lastName || existingNames.slice(1).join(" ");
   form.elements.dob.value = profile.dob && profile.dob !== "—" ? profile.dob : "";
