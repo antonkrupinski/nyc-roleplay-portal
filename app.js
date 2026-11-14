@@ -2338,3 +2338,45 @@ initialize().catch((error) => {
   setText("#market-status-label", "APP ERROR");
   showToast("The dashboard could not finish loading. Refresh the page to try again.");
 });
+
+
+/* Rotating winter backgrounds, crossfaded behind the frosted-glass interface. */
+(() => {
+  const scenes = [
+    "https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&w=2400&q=88",
+    "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=2400&q=88",
+    "https://images.unsplash.com/photo-1517299321609-52687d1bc55a?auto=format&fit=crop&w=2400&q=88",
+    "https://images.unsplash.com/photo-1483664852095-d6cc6870702d?auto=format&fit=crop&w=2400&q=88"
+  ];
+  const start = () => {
+    if (!document.body || document.querySelector(".winter-backdrop")) return;
+    const layers = [0, 1].map((index) => {
+      const layer = document.createElement("div");
+      layer.className = "winter-backdrop";
+      layer.setAttribute("aria-hidden", "true");
+      layer.dataset.layer = String(index);
+      document.body.prepend(layer);
+      return layer;
+    });
+    let scene = 0;
+    let active = 0;
+    const showNext = () => {
+      const next = 1 - active;
+      const layer = layers[next];
+      layer.style.backgroundImage = 'url("' + scenes[scene] + '")';
+      const img = new Image();
+      img.onload = () => {
+        layer.classList.add("is-visible");
+        layers[active].classList.remove("is-visible");
+        active = next;
+        scene = (scene + 1) % scenes.length;
+      };
+      img.onerror = () => { scene = (scene + 1) % scenes.length; };
+      img.src = scenes[scene];
+    };
+    showNext();
+    window.setInterval(showNext, 18000);
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
+  else start();
+})();
