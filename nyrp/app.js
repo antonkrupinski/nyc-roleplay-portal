@@ -1825,6 +1825,98 @@ function openBoloForm(kind) {
  $("#bolo-form").addEventListener("submit",e=>{e.preventDefault();const f=new FormData(e.currentTarget);const data=Object.fromEntries(f.entries());const summary=vehicle?[data.plate&&`Plate ${data.plate}`,data.color,data.make,data.description].filter(Boolean).join(" · "):[data.cadName,data.description].filter(Boolean).join(" · ");const list=readStore(boloKey);list.unshift({kind,summary,createdAt:new Date().toLocaleString(),officer:data.officer});writeStore(boloKey,list);$("#leo-modal").close();renderBolos();showToast("BOLO published.");});
 }
 
+
+function setupOnboarding() {
+  const gateway = $("#entry-gateway");
+  if (!gateway) return;
+  const hasSavedGuest = (() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(profileKey) || "null");
+      return Boolean(saved && saved.name && saved.name !== SAMPLE_PROFILE.name);
+    } catch { return false; }
+  })();
+  const hasExistingAccountCharacter = Boolean(currentUser && profile.name && profile.name !== SAMPLE_PROFILE.name);
+  if (hasSavedGuest || hasExistingAccountCharacter) {
+    gateway.hidden = true;
+    document.body.classList.remove("onboarding-open");
+    return;
+  }
+  gateway.hidden = false;
+  document.body.classList.add("onboarding-open");
+  const choose = $("#gateway-choose");
+  const character = $("#gateway-character");
+  const form = $("#character-create-form");
+  const showCharacter = () => {
+    choose.hidden = true;
+    character.hidden = false;
+    $("#character-create-error").textContent = "";
+    $("#gateway-character").scrollTop = 0;
+    form.elements.firstName.focus();
+  };
+  const showChoices = () => {
+    character.hidden = true;
+    choose.hidden = false;
+  };
+  $("[data-gateway-civilian]").addEventListener("click", showCharacter);
+  $("[data-gateway-back]").addEventListener("click", showChoices);
+  form.elements.firstName.addEventListener("input", updatePreview);
+  form.elements.lastName.addEventListener("input", updatePreview);
+  function updatePreview() {
+    const first = form.elements.firstName.value.trim();
+    const last = form.elements.lastName.value.trim();
+    const full = [first, last].filter(Boolean).join(" ") || "Your character";
+    $("#character-preview-name").textContent = full;
+    $("#character-monogram").textContent = (first[0] || "N").toUpperCase() + (last[0] || "Y").toUpperCase();
+  }
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submit = form.querySelector('[type="submit"]');
+    const data = new FormData(form);
+    const firstName = String(data.get("firstName") || "").trim();
+    const lastName = String(data.get("lastName") || "").trim();
+    const dob = String(data.get("dob") || "");
+    if (!firstName || !lastName || !dob) {
+      $("#character-create-error").textContent = "Add your character's first name, last name and date of birth.";
+      return;
+    }
+    const birth = new Date(dob + "T12:00:00");
+    const today = new Date();
+    if (Number.isNaN(birth.getTime()) || birth > today) {
+      $("#character-create-error").textContent = "Enter a valid character date of birth.";
+      return;
+    }
+    const name = (firstName + " " + lastName).slice(0, 36);
+    profile = {
+      ...profile,
+      name, firstName, lastName, dob,
+      pronouns: String(data.get("pronouns") || "—"),
+      height: String(data.get("height") || "").trim() || "—",
+      weight: String(data.get("weight") || "").trim(),
+      eyes: String(data.get("eyes") || "").trim() || "—",
+      occupation: String(data.get("occupation") || "").trim() || "City resident",
+      borough: String(data.get("borough") || "Manhattan"),
+      neighborhood: String(data.get("neighborhood") || "").trim() || "New York",
+      idNo: profile.idNo || makeId()
+    };
+    submit.disabled = true;
+    submit.querySelector("span").textContent = "Creating character…";
+    $("#character-create-error").textContent = "";
+    try {
+      await saveProfile();
+      updateProfileUI();
+      gateway.hidden = true;
+      document.body.classList.remove("onboarding-open");
+      activatePage("profile", true);
+      showToast("Your civilian character has been created.");
+    } catch (error) {
+      $("#character-create-error").textContent = error.message || "Could not save your character. Please try again.";
+    } finally {
+      submit.disabled = false;
+      submit.querySelector("span").textContent = "Create my character";
+    }
+  });
+}
+
 async function initialize() {
   loadGuestData();
   const params = new URLSearchParams(window.location.search);
@@ -1869,6 +1961,7 @@ async function initialize() {
     localStorage.removeItem(marketKey);
   }
   updateProfileUI();
+  setupOnboarding();
   if (currentUser) await loadDepartments();
   bindModerationAutocomplete("#moderation-user-search", "#moderation-user-suggestions");
   bindModerationAutocomplete("#moderation-logs-search", "#moderation-log-suggestions");
