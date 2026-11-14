@@ -776,6 +776,9 @@ function normalizeProfile(input, previous = defaultProfile) {
   const borough = safeString(value.borough, previous.borough, 32);
   return {
     name: safeString(value.name, previous.name, 36),
+    firstName: safeString(value.firstName, previous.firstName || "", 18),
+    lastName: safeString(value.lastName, previous.lastName || "", 18),
+    weight: safeString(value.weight, previous.weight || "", 4),
     dob: safeString(value.dob, previous.dob, 10),
     pronouns: safeString(value.pronouns, previous.pronouns, 24),
     borough: allowedBoroughs.has(borough) ? borough : previous.borough,
