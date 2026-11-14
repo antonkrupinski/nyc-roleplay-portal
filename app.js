@@ -2380,3 +2380,68 @@ initialize().catch((error) => {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
   else start();
 })();
+
+
+
+/* Fine, layered snowfall. Canvas is decorative and never intercepts input. */
+(() => {
+  if (window.__nycWinterSnowStarted) return;
+  window.__nycWinterSnowStarted = true;
+  const boot = () => {
+    if (!document.body || document.getElementById("nyc-snowfall")) return;
+    const canvas = document.createElement("canvas");
+    canvas.id = "nyc-snowfall";
+    canvas.setAttribute("aria-hidden", "true");
+    canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:40;opacity:.72;";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let width = 0, height = 0, dpr = 1, flakes = [], frame = 0;
+    const makeFlake = (initial) => ({
+      x: Math.random() * width,
+      y: initial ? Math.random() * height : -8,
+      radius: .7 + Math.random() * 2.1,
+      speed: .35 + Math.random() * 1.05,
+      drift: (Math.random() - .5) * .55,
+      phase: Math.random() * Math.PI * 2,
+      opacity: .22 + Math.random() * .62
+    });
+    const resize = () => {
+      width = window.innerWidth; height = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const count = Math.min(115, Math.max(35, Math.round(width * height / 14500)));
+      flakes = Array.from({length: count}, () => makeFlake(true));
+    };
+    const draw = () => {
+      ctx.clearRect(0, 0, width, height);
+      for (const f of flakes) {
+        f.y += f.speed;
+        f.x += f.drift + Math.sin((f.y / 75) + f.phase) * .28;
+        if (f.y > height + 10) Object.assign(f, makeFlake(false));
+        if (f.x < -10) f.x = width + 8;
+        if (f.x > width + 10) f.x = -8;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(247,252,255," + f.opacity + ")";
+        ctx.shadowBlur = f.radius > 1.8 ? 7 : 3;
+        ctx.shadowColor = "rgba(220,241,255,.65)";
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      frame = window.requestAnimationFrame(draw);
+    };
+    resize();
+    window.addEventListener("resize", resize, { passive: true });
+    if (!reduce.matches) draw();
+    reduce.addEventListener?.("change", event => {
+      if (event.matches) { window.cancelAnimationFrame(frame); ctx.clearRect(0,0,width,height); }
+      else draw();
+    });
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, {once:true});
+  else boot();
+})();
