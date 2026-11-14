@@ -1,14 +1,38 @@
 const SAMPLE_PROFILE = {
-  name: "Alex Morgan",
-  dob: "1998-04-18",
-  pronouns: "They / Them",
+  name: "Eddie Alverez",
+  firstName: "Eddie",
+  lastName: "Alverez",
+  dob: "2000-01-01",
+  pronouns: "Male",
   borough: "Manhattan",
-  neighborhood: "Lower East Side",
-  occupation: "Neighborhood regular",
-  eyes: "Hazel",
-  height: "5′ 9″",
-  idNo: "NY 108 · 427 · 319"
+  neighborhood: "Downtown",
+  occupation: "None",
+  eyes: "Brown",
+  height: "5'9\"",
+  weight: "160",
+  idNo: "4C5F46CC"
 };
+
+function formatCadDob(isoDate) {
+  if (!isoDate || isoDate === "—") return "Jan 1, 2000";
+  const parts = String(isoDate).trim().split("-");
+  if (parts.length === 3) {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const m = months[parseInt(parts[1], 10) - 1] || "Jan";
+    const d = parseInt(parts[2], 10) || 1;
+    const y = parts[0];
+    return `${m} ${d}, ${y}`;
+  }
+  return isoDate;
+}
+
+function formatCadSex(pronouns) {
+  if (!pronouns || pronouns === "—") return "Male";
+  if (pronouns === "He / Him") return "Male";
+  if (pronouns === "She / Her") return "Female";
+  if (pronouns === "They / Them") return "Non-Binary";
+  return pronouns;
+}
 
 const SAMPLE_VEHICLES = [
   { id: "sample-1", plate: "NYC-4281", model: "2022 Declasse Premier", color: "Midnight blue", borough: "Manhattan", status: "Registered" },
@@ -113,6 +137,10 @@ function activatePage(requestedPage, updateHistory = false) {
     else link.removeAttribute("aria-current");
   });
   document.body.dataset.page = page;
+  const civilianPages = ["profile", "licenses", "wallet", "businesses", "shop", "events", "vehicles"];
+  const isCivilian = civilianPages.includes(page);
+  document.body.classList.toggle("cad-view", isCivilian);
+  $("#cad-nav-dashboard")?.classList.toggle("is-active", page === "profile");
   setText("#breadcrumb-title", info.title);
   setText("#breadcrumb-section", info.section);
   document.title = "NYC Roleplay — " + info.title;
@@ -306,10 +334,11 @@ async function loadPublicApplication() {
       } else {
         control = `<input id="${escapeHtml(id)}" name="${questionId}" maxlength="250" ${question.required ? "required" : ""}>`;
       }
-      const label = question.type === "multiple_choice" || question.type === "checkboxes" || question.type === "rating"
-        ? `<div class="public-application-question-label">${escapeHtml(question.text)}${requiredLabel}</div>`
+      const grouped = ["multiple_choice", "checkboxes", "rating"].includes(question.type);
+      const questionLabel = grouped
+        ? `<strong class="public-application-question-prompt">${escapeHtml(question.text)}${requiredLabel}</strong>`
         : `<label for="${escapeHtml(id)}">${escapeHtml(question.text)}${requiredLabel}</label>`;
-      return `<fieldset class="public-application-question" data-question-type="${escapeHtml(question.type)}"><legend class="public-application-question-number">QUESTION ${String(index + 1).padStart(2, "0")}</legend>${label}${control}</fieldset>`;
+      return `<fieldset class="public-application-question" data-question-type="${escapeHtml(question.type)}"><legend class="public-application-question-number"><span>QUESTION ${String(index + 1).padStart(2, "0")}</span>${grouped ? questionLabel : ""}</legend>${grouped ? "" : questionLabel}${control}</fieldset>`;
     }).join("");
     formElement.dataset.loaded = "true";
     message.textContent = "Your verified Discord and Roblox accounts will be included with your submission.";
@@ -840,14 +869,14 @@ async function handleDepartmentAction(button) {
     await requestJson(base + "/members/" + encodeURIComponent(button.dataset.memberId) + "/shift-end", { method: "POST", body: JSON.stringify({}) });
     await refreshDepartmentPage("Department shift ended.");
   } else if (action === "remove-member") {
-    if (!(await customConfirm("Remove this person from the department roster?", { title: "Remove person", confirmLabel: "Remove" }))) return;
+    if (!confirm("Remove this person from the department roster?")) return;
     await requestJson(base + "/members/" + encodeURIComponent(button.dataset.memberId), { method: "DELETE" });
     await refreshDepartmentPage("Person removed from the department.");
   } else if (action === "review-leave") {
     await requestJson(base + "/leave/" + encodeURIComponent(button.dataset.leaveId), { method: "POST", body: JSON.stringify({ decision: button.dataset.decision }) });
     await refreshDepartmentPage(button.dataset.decision === "approved" ? "Leave request approved." : "Leave request denied.");
   } else if (action === "delete-role") {
-    if (!(await customConfirm("Delete this role? It must have no assigned members.", { title: "Delete role", confirmLabel: "Delete" }))) return;
+    if (!confirm("Delete this role? It must have no assigned members.")) return;
     await requestJson(base + "/roles/" + encodeURIComponent(button.dataset.roleId), { method: "DELETE" });
     await refreshDepartmentPage("Department role deleted.");
   }
@@ -872,29 +901,6 @@ async function saveProfile() {
 
 async function saveGuestPortfolio() {
   localStorage.setItem(marketKey, JSON.stringify(portfolio));
-}
-
-function customConfirm(message, options = {}) {
-  const dialog = $("#confirm-modal");
-  if (!dialog) return Promise.resolve(window.confirm(message));
-  $("#confirm-title").textContent = options.title || "Are you sure?";
-  $("#confirm-message").textContent = message;
-  $("#confirm-accept").textContent = options.confirmLabel || "Continue";
-  dialog.showModal();
-  return new Promise((resolve) => {
-    let settled = false;
-    const finish = (value) => {
-      if (settled) return;
-      settled = true;
-      dialog.close();
-      resolve(value);
-    };
-    dialog.querySelectorAll("[data-confirm-cancel]").forEach((el) => {
-      el.addEventListener("click", () => finish(false), { once: true });
-    });
-    $("#confirm-accept").addEventListener("click", () => finish(true), { once: true });
-    dialog.addEventListener("cancel", () => finish(false), { once: true });
-  });
 }
 
 function updateProfileUI() {
@@ -949,6 +955,80 @@ function updateProfileUI() {
   setText("#connect-inline", currentUser ? "Connected ✓" : "Connect ↗");
   renderVehicles();
   renderPortfolio();
+
+  // Populate CAD Civilian Dashboard
+  const firstName = profile.firstName || (profile.name ? profile.name.trim().split(/\s+/)[0] : "Eddie");
+  setText("#cad-greeting-name", firstName);
+  setText("#cad-user-name", firstName);
+  setText("#cad-user-role", currentUser?.seniorHighRanking ? "Senior High Ranking" : "Civilian");
+
+  const idNumber = profile.idNo && /^[A-Za-z0-9]{8}$/.test(profile.idNo) ? profile.idNo.toUpperCase() : (profile.idNo || "4C5F46CC");
+  setText("#cad-id-number", idNumber);
+  setText("#cad-id-fullname", (profile.name || "EDDIE ALVEREZ").toUpperCase());
+  setText("#cad-id-dob", formatCadDob(profile.dob));
+  setText("#cad-id-sex", formatCadSex(profile.pronouns));
+  setText("#cad-id-height", profile.height && profile.height !== "—" ? profile.height : "5'9\"");
+  setText("#cad-id-eyes", profile.eyes && profile.eyes !== "—" ? profile.eyes : "Brown");
+  setText("#cad-id-occupation", profile.occupation && profile.occupation !== "—" ? profile.occupation : "None");
+
+  // Character modal summary
+  setText("#cad-modal-char-name", profile.name || "Eddie Alverez");
+  setText("#cad-modal-char-id", idNumber);
+  setText("#cad-modal-char-borough", profile.borough || "Manhattan");
+  setText("#cad-modal-char-job", profile.occupation && profile.occupation !== "—" ? profile.occupation : "None");
+
+  // Avatars
+  let cadAvatarSrc = "/assets/roblox-avatar-default.svg";
+  if (currentUser?.robloxId) {
+    cadAvatarSrc = "/api/roblox-avatar";
+  } else if (currentUser?.avatar && currentUser.id && !currentUser.demo) {
+    cadAvatarSrc = "https://cdn.discordapp.com/avatars/" + encodeURIComponent(currentUser.id) + "/" + encodeURIComponent(currentUser.avatar) + ".png?size=96";
+  }
+  const cadIdAvatar = $("#cad-id-avatar");
+  if (cadIdAvatar) cadIdAvatar.src = cadAvatarSrc;
+  const cadTopAvatar = $("#cad-topbar-avatar");
+  if (cadTopAvatar) cadTopAvatar.src = cadAvatarSrc;
+  const cadModalAvatar = $("#cad-modal-char-avatar");
+  if (cadModalAvatar) cadModalAvatar.src = cadAvatarSrc;
+
+  updatePlaytimeRewardUI();
+}
+
+function updatePlaytimeRewardUI() {
+  const bar = $("#cad-playtime-bar");
+  const progressText = $("#cad-playtime-progress-text");
+  const percentText = $("#cad-playtime-percent");
+  const claimBtn = $("#cad-claim-reward-btn");
+  const claimText = $("#cad-claim-reward-text");
+
+  const todayKey = "cad_reward_claimed_" + new Date().toISOString().slice(0, 10);
+  const alreadyClaimed = Boolean(localStorage.getItem(todayKey));
+
+  let playedMinutes = 0;
+  if (typeof window._cadPlaytimeMinutes === "number") {
+    playedMinutes = window._cadPlaytimeMinutes;
+  }
+
+  const percent = Math.min(100, Math.round((playedMinutes / 30) * 100));
+  if (bar) bar.style.width = percent + "%";
+  if (progressText) progressText.textContent = `${playedMinutes} / 30 min`;
+  if (percentText) percentText.textContent = `${percent}%`;
+
+  if (claimBtn && claimText) {
+    if (alreadyClaimed) {
+      claimBtn.disabled = true;
+      claimBtn.classList.remove("is-claimable");
+      claimText.textContent = "Claimed today ✓";
+    } else if (playedMinutes >= 30) {
+      claimBtn.disabled = false;
+      claimBtn.classList.add("is-claimable");
+      claimText.textContent = "Claim $49 reward";
+    } else {
+      claimBtn.disabled = false;
+      claimBtn.classList.remove("is-claimable");
+      claimText.textContent = `Play ${Math.max(1, 30 - playedMinutes)} more min to claim`;
+    }
+  }
 }
 
 function updateResidentAvatar() {
@@ -1412,7 +1492,7 @@ function openProfileEditor() {
 
 async function openConnect() {
   if (currentUser) {
-    if (await customConfirm("Sign out of your Discord account?", { title: "Sign out", confirmLabel: "Sign out" })) window.location.href = "/auth/logout";
+    if (confirm("Sign out of your Discord account?")) window.location.href = "/auth/logout";
     return;
   }
   connectModal.showModal();
@@ -1835,16 +1915,16 @@ function setupOnboarding() {
   const character = $("#gateway-character");
   const form = $("#character-create-form");
   const existingNames = String(profile.name || "").trim().split(/\s+/);
-  form.elements.firstName.value = profile.firstName || existingNames[0] || "";
-  form.elements.lastName.value = profile.lastName || existingNames.slice(1).join(" ");
-  form.elements.dob.value = profile.dob && profile.dob !== "—" ? profile.dob : "";
-  form.elements.pronouns.value = profile.pronouns && profile.pronouns !== "—" ? profile.pronouns : "";
-  form.elements.height.value = profile.height && profile.height !== "—" ? profile.height : "";
-  form.elements.weight.value = profile.weight || "";
-  form.elements.eyes.value = profile.eyes && profile.eyes !== "—" ? profile.eyes : "";
-  form.elements.occupation.value = profile.occupation && profile.occupation !== "—" ? profile.occupation : "";
+  form.elements.firstName.value = profile.firstName || existingNames[0] || "Eddie";
+  form.elements.lastName.value = profile.lastName || existingNames.slice(1).join(" ") || "Alverez";
+  form.elements.dob.value = profile.dob && profile.dob !== "—" ? profile.dob : "2000-01-01";
+  form.elements.pronouns.value = profile.pronouns && profile.pronouns !== "—" ? profile.pronouns : "Male";
+  form.elements.height.value = profile.height && profile.height !== "—" ? profile.height : "5'9\"";
+  form.elements.weight.value = profile.weight || "160";
+  form.elements.eyes.value = profile.eyes && profile.eyes !== "—" ? profile.eyes : "Brown";
+  form.elements.occupation.value = profile.occupation && profile.occupation !== "—" ? profile.occupation : "None";
   form.elements.borough.value = profile.borough || "Manhattan";
-  form.elements.neighborhood.value = profile.neighborhood && profile.neighborhood !== "—" ? profile.neighborhood : "";
+  form.elements.neighborhood.value = profile.neighborhood && profile.neighborhood !== "—" ? profile.neighborhood : "Downtown";
   const showCharacter = () => {
     choose.hidden = true;
     character.hidden = false;
@@ -1861,11 +1941,11 @@ function setupOnboarding() {
   form.elements.firstName.addEventListener("input", updatePreview);
   form.elements.lastName.addEventListener("input", updatePreview);
   function updatePreview() {
-    const first = form.elements.firstName.value.trim();
-    const last = form.elements.lastName.value.trim();
-    const full = [first, last].filter(Boolean).join(" ") || "Your character";
+    const first = form.elements.firstName.value.trim() || "Eddie";
+    const last = form.elements.lastName.value.trim() || "Alverez";
+    const full = [first, last].filter(Boolean).join(" ") || "Eddie Alverez";
     $("#character-preview-name").textContent = full;
-    $("#character-monogram").textContent = (first[0] || "N").toUpperCase() + (last[0] || "Y").toUpperCase();
+    $("#character-monogram").textContent = (first[0] || "E").toUpperCase() + (last[0] || "A").toUpperCase();
   }
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1888,14 +1968,14 @@ function setupOnboarding() {
     profile = {
       ...profile,
       name, firstName, lastName, dob,
-      pronouns: String(data.get("pronouns") || "—"),
-      height: String(data.get("height") || "").trim() || "—",
-      weight: String(data.get("weight") || "").trim(),
-      eyes: String(data.get("eyes") || "").trim() || "—",
-      occupation: String(data.get("occupation") || "").trim() || "City resident",
+      pronouns: String(data.get("pronouns") || "Male"),
+      height: String(data.get("height") || "").trim() || "5'9\"",
+      weight: String(data.get("weight") || "").trim() || "160",
+      eyes: String(data.get("eyes") || "").trim() || "Brown",
+      occupation: String(data.get("occupation") || "").trim() || "None",
       borough: String(data.get("borough") || "Manhattan"),
-      neighborhood: String(data.get("neighborhood") || "").trim() || "New York",
-      idNo: profile.idNo || makeId()
+      neighborhood: String(data.get("neighborhood") || "").trim() || "Downtown",
+      idNo: profile.idNo || "4C5F46CC"
     };
     submit.disabled = true;
     submit.querySelector("span").textContent = "Creating character…";
@@ -2240,7 +2320,7 @@ async function initialize() {
   });
   $("#download-card").addEventListener("click", downloadCard);
   $("#reset-profile").addEventListener("click", async () => {
-    if (!(await customConfirm("Reset this profile to the sample New York resident?", { title: "Reset profile", confirmLabel: "Reset" }))) return;
+    if (!confirm("Reset this profile to the sample New York resident?")) return;
     profile = { ...defaultProfile };
     try {
       await saveProfile();
@@ -2326,7 +2406,7 @@ async function initialize() {
     const adminAction = event.target.closest?.("[data-admin-action]");
     if (adminAction?.dataset.adminAction === "delete-department") {
       event.preventDefault();
-      if (!(await customConfirm("Remove this department and its roster, shifts, and leave requests?", { title: "Remove department", confirmLabel: "Remove" }))) return;
+      if (!confirm("Remove this department and its roster, shifts, and leave requests?")) return;
       try {
         await requestJson("/api/admin/departments/" + encodeURIComponent(adminAction.dataset.departmentId), { method: "DELETE" });
         await loadDepartments();
@@ -2433,6 +2513,129 @@ async function initialize() {
     }
     document.addEventListener("click",e=>{const b=e.target.closest("[data-leo-action]");if(b)openBoloForm(b.dataset.leoAction==="vehicle-bolo"?"vehicle":"person");});
   renderBolos();
+function setupCadCivilianListeners() {
+  const savedTheme = localStorage.getItem("nycrp.cad_theme");
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark-mode");
+  }
+
+  $("#cad-theme-toggle")?.addEventListener("click", () => {
+    const isDark = document.body.classList.toggle("dark-mode");
+    localStorage.setItem("nycrp.cad_theme", isDark ? "dark" : "light");
+    showToast(isDark ? "Dark theme enabled" : "Light theme enabled");
+  });
+
+  $("#cad-nav-home")?.addEventListener("click", () => {
+    const gateway = $("#entry-gateway");
+    if (gateway) {
+      gateway.hidden = false;
+      document.body.classList.add("onboarding-open");
+      $("#gateway-choose").hidden = false;
+      $("#gateway-character").hidden = true;
+    }
+  });
+
+  $("#cad-logout-btn")?.addEventListener("click", () => {
+    const gateway = $("#entry-gateway");
+    if (gateway) {
+      gateway.hidden = false;
+      document.body.classList.add("onboarding-open");
+      $("#gateway-choose").hidden = false;
+      $("#gateway-character").hidden = true;
+    }
+  });
+
+  $("#cad-docs-btn")?.addEventListener("click", () => {
+    $("#cad-rules-modal")?.showModal();
+  });
+
+  $("#cad-user-chip")?.addEventListener("click", () => {
+    $("#cad-character-modal")?.showModal();
+  });
+
+  $("#cad-view-character")?.addEventListener("click", () => {
+    $("#cad-character-modal")?.showModal();
+  });
+
+  document.addEventListener("click", (event) => {
+    const actionBtn = event.target.closest?.("[data-cad-action]");
+    if (!actionBtn) return;
+    const action = actionBtn.dataset.cadAction;
+    if (action === "911") {
+      $("#cad-911-modal")?.showModal();
+    } else if (action === "character") {
+      $("#cad-character-modal")?.showModal();
+    } else if (action === "housing") {
+      $("#cad-housing-modal")?.showModal();
+    } else if (action === "insurance") {
+      $("#cad-insurance-modal")?.showModal();
+    }
+  });
+
+  $("#cad-edit-char-btn")?.addEventListener("click", () => {
+    $("#cad-character-modal")?.close();
+    openProfileEditor();
+  });
+
+  $("#cad-toggle-physical-id-btn")?.addEventListener("click", () => {
+    const drawer = $("#cad-physical-id-drawer");
+    if (drawer) drawer.hidden = !drawer.hidden;
+  });
+
+  $("#cad-911-form")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(event.target);
+    const service = data.get("service") || "police";
+    const loc = data.get("location") || "Postal 104";
+    $("#cad-911-modal")?.close();
+    showToast(`🚨 911 Call dispatched to ${String(service).toUpperCase()} for ${loc}. Help is en route!`);
+  });
+
+  document.addEventListener("click", (event) => {
+    const rentBtn = event.target.closest?.("[data-rent-house]");
+    if (!rentBtn) return;
+    const houseName = rentBtn.dataset.rentHouse;
+    const price = Number(rentBtn.dataset.rentPrice) || 350;
+    if ((portfolio.balance || 0) < price) {
+      showToast(`Insufficient funds in wallet (Requires C$ ${price}.00).`);
+      return;
+    }
+    portfolio.balance -= price;
+    savePortfolio();
+    updateProfileUI();
+    rentBtn.textContent = "Leased ✓";
+    rentBtn.disabled = true;
+    showToast(`Leased ${houseName} for C$ ${price}.00/wk! Keys added to your character.`);
+  });
+
+  document.addEventListener("click", (event) => {
+    const enrollBtn = event.target.closest?.("[data-enroll-tier]");
+    if (!enrollBtn) return;
+    const tier = enrollBtn.dataset.enrollTier;
+    $("#cad-insurance-modal")?.close();
+    showToast(`Enrolled in ${tier} Health Insurance! EMS medical bills are now covered.`);
+  });
+
+  $("#cad-claim-reward-btn")?.addEventListener("click", () => {
+    const todayKey = "cad_reward_claimed_" + new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(todayKey)) {
+      showToast("You have already claimed today's daily reward. Come back tomorrow!");
+      return;
+    }
+    let playedMinutes = window._cadPlaytimeMinutes || 0;
+    if (playedMinutes < 30) {
+      showToast(`Play 30 minutes in-game to claim this reward. Currently at ${playedMinutes} / 30 min.`);
+      return;
+    }
+    localStorage.setItem(todayKey, "true");
+    portfolio.balance = (Number(portfolio.balance) || 0) + 49;
+    savePortfolio();
+    updateProfileUI();
+    showToast("Claimed $49.00 daily playtime reward! Added to your wallet.");
+  });
+}
+
+  setupCadCivilianListeners();
   window.addEventListener("popstate", () => activatePage(currentPageFromHash()));
   window.addEventListener("hashchange", () => activatePage(currentPageFromHash()));
   activatePage(currentPageFromHash());
@@ -2452,3 +2655,110 @@ initialize().catch((error) => {
   setText("#market-status-label", "APP ERROR");
   showToast("The dashboard could not finish loading. Refresh the page to try again.");
 });
+
+
+/* Rotating winter backgrounds, crossfaded behind the frosted-glass interface. */
+(() => {
+  const scenes = [
+    "https://images.unsplash.com/photo-1418985991508-e47386d96a71?auto=format&fit=crop&w=2400&q=88",
+    "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?auto=format&fit=crop&w=2400&q=88",
+    "https://images.unsplash.com/photo-1517299321609-52687d1bc55a?auto=format&fit=crop&w=2400&q=88",
+    "https://images.unsplash.com/photo-1483664852095-d6cc6870702d?auto=format&fit=crop&w=2400&q=88"
+  ];
+  const start = () => {
+    if (!document.body || document.querySelector(".winter-backdrop")) return;
+    const layers = [0, 1].map((index) => {
+      const layer = document.createElement("div");
+      layer.className = "winter-backdrop";
+      layer.setAttribute("aria-hidden", "true");
+      layer.dataset.layer = String(index);
+      document.body.prepend(layer);
+      return layer;
+    });
+    let scene = 0;
+    let active = 0;
+    const showNext = () => {
+      const next = 1 - active;
+      const layer = layers[next];
+      layer.style.backgroundImage = 'url("' + scenes[scene] + '")';
+      const img = new Image();
+      img.onload = () => {
+        layer.classList.add("is-visible");
+        layers[active].classList.remove("is-visible");
+        active = next;
+        scene = (scene + 1) % scenes.length;
+      };
+      img.onerror = () => { scene = (scene + 1) % scenes.length; };
+      img.src = scenes[scene];
+    };
+    showNext();
+    window.setInterval(showNext, 18000);
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
+  else start();
+})();
+
+
+
+/* Fine, layered snowfall. Canvas is decorative and never intercepts input. */
+(() => {
+  if (window.__nycWinterSnowStarted) return;
+  window.__nycWinterSnowStarted = true;
+  const boot = () => {
+    if (!document.body || document.getElementById("nyc-snowfall")) return;
+    const canvas = document.createElement("canvas");
+    canvas.id = "nyc-snowfall";
+    canvas.setAttribute("aria-hidden", "true");
+    canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:40;opacity:.72;";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let width = 0, height = 0, dpr = 1, flakes = [], frame = 0;
+    const makeFlake = (initial) => ({
+      x: Math.random() * width,
+      y: initial ? Math.random() * height : -8,
+      radius: .7 + Math.random() * 2.1,
+      speed: .35 + Math.random() * 1.05,
+      drift: (Math.random() - .5) * .55,
+      phase: Math.random() * Math.PI * 2,
+      opacity: .22 + Math.random() * .62
+    });
+    const resize = () => {
+      width = window.innerWidth; height = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const count = Math.min(115, Math.max(35, Math.round(width * height / 14500)));
+      flakes = Array.from({length: count}, () => makeFlake(true));
+    };
+    const draw = () => {
+      ctx.clearRect(0, 0, width, height);
+      for (const f of flakes) {
+        f.y += f.speed;
+        f.x += f.drift + Math.sin((f.y / 75) + f.phase) * .28;
+        if (f.y > height + 10) Object.assign(f, makeFlake(false));
+        if (f.x < -10) f.x = width + 8;
+        if (f.x > width + 10) f.x = -8;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(247,252,255," + f.opacity + ")";
+        ctx.shadowBlur = f.radius > 1.8 ? 7 : 3;
+        ctx.shadowColor = "rgba(220,241,255,.65)";
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      frame = window.requestAnimationFrame(draw);
+    };
+    resize();
+    window.addEventListener("resize", resize, { passive: true });
+    if (!reduce.matches) draw();
+    reduce.addEventListener?.("change", event => {
+      if (event.matches) { window.cancelAnimationFrame(frame); ctx.clearRect(0,0,width,height); }
+      else draw();
+    });
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot, {once:true});
+  else boot();
+})();

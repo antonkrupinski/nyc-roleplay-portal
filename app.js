@@ -1,14 +1,38 @@
 const SAMPLE_PROFILE = {
-  name: "Alex Morgan",
-  dob: "1998-04-18",
-  pronouns: "They / Them",
+  name: "Eddie Alverez",
+  firstName: "Eddie",
+  lastName: "Alverez",
+  dob: "2000-01-01",
+  pronouns: "Male",
   borough: "Manhattan",
-  neighborhood: "Lower East Side",
-  occupation: "Neighborhood regular",
-  eyes: "Hazel",
-  height: "5′ 9″",
-  idNo: "NY 108 · 427 · 319"
+  neighborhood: "Downtown",
+  occupation: "None",
+  eyes: "Brown",
+  height: "5'9\"",
+  weight: "160",
+  idNo: "4C5F46CC"
 };
+
+function formatCadDob(isoDate) {
+  if (!isoDate || isoDate === "—") return "Jan 1, 2000";
+  const parts = String(isoDate).trim().split("-");
+  if (parts.length === 3) {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const m = months[parseInt(parts[1], 10) - 1] || "Jan";
+    const d = parseInt(parts[2], 10) || 1;
+    const y = parts[0];
+    return `${m} ${d}, ${y}`;
+  }
+  return isoDate;
+}
+
+function formatCadSex(pronouns) {
+  if (!pronouns || pronouns === "—") return "Male";
+  if (pronouns === "He / Him") return "Male";
+  if (pronouns === "She / Her") return "Female";
+  if (pronouns === "They / Them") return "Non-Binary";
+  return pronouns;
+}
 
 const SAMPLE_VEHICLES = [
   { id: "sample-1", plate: "NYC-4281", model: "2022 Declasse Premier", color: "Midnight blue", borough: "Manhattan", status: "Registered" },
@@ -113,6 +137,10 @@ function activatePage(requestedPage, updateHistory = false) {
     else link.removeAttribute("aria-current");
   });
   document.body.dataset.page = page;
+  const civilianPages = ["profile", "licenses", "wallet", "businesses", "shop", "events", "vehicles"];
+  const isCivilian = civilianPages.includes(page);
+  document.body.classList.toggle("cad-view", isCivilian);
+  $("#cad-nav-dashboard")?.classList.toggle("is-active", page === "profile");
   setText("#breadcrumb-title", info.title);
   setText("#breadcrumb-section", info.section);
   document.title = "NYC Roleplay — " + info.title;
@@ -927,6 +955,80 @@ function updateProfileUI() {
   setText("#connect-inline", currentUser ? "Connected ✓" : "Connect ↗");
   renderVehicles();
   renderPortfolio();
+
+  // Populate CAD Civilian Dashboard
+  const firstName = profile.firstName || (profile.name ? profile.name.trim().split(/\s+/)[0] : "Eddie");
+  setText("#cad-greeting-name", firstName);
+  setText("#cad-user-name", firstName);
+  setText("#cad-user-role", currentUser?.seniorHighRanking ? "Senior High Ranking" : "Civilian");
+
+  const idNumber = profile.idNo && /^[A-Za-z0-9]{8}$/.test(profile.idNo) ? profile.idNo.toUpperCase() : (profile.idNo || "4C5F46CC");
+  setText("#cad-id-number", idNumber);
+  setText("#cad-id-fullname", (profile.name || "EDDIE ALVEREZ").toUpperCase());
+  setText("#cad-id-dob", formatCadDob(profile.dob));
+  setText("#cad-id-sex", formatCadSex(profile.pronouns));
+  setText("#cad-id-height", profile.height && profile.height !== "—" ? profile.height : "5'9\"");
+  setText("#cad-id-eyes", profile.eyes && profile.eyes !== "—" ? profile.eyes : "Brown");
+  setText("#cad-id-occupation", profile.occupation && profile.occupation !== "—" ? profile.occupation : "None");
+
+  // Character modal summary
+  setText("#cad-modal-char-name", profile.name || "Eddie Alverez");
+  setText("#cad-modal-char-id", idNumber);
+  setText("#cad-modal-char-borough", profile.borough || "Manhattan");
+  setText("#cad-modal-char-job", profile.occupation && profile.occupation !== "—" ? profile.occupation : "None");
+
+  // Avatars
+  let cadAvatarSrc = "/assets/roblox-avatar-default.svg";
+  if (currentUser?.robloxId) {
+    cadAvatarSrc = "/api/roblox-avatar";
+  } else if (currentUser?.avatar && currentUser.id && !currentUser.demo) {
+    cadAvatarSrc = "https://cdn.discordapp.com/avatars/" + encodeURIComponent(currentUser.id) + "/" + encodeURIComponent(currentUser.avatar) + ".png?size=96";
+  }
+  const cadIdAvatar = $("#cad-id-avatar");
+  if (cadIdAvatar) cadIdAvatar.src = cadAvatarSrc;
+  const cadTopAvatar = $("#cad-topbar-avatar");
+  if (cadTopAvatar) cadTopAvatar.src = cadAvatarSrc;
+  const cadModalAvatar = $("#cad-modal-char-avatar");
+  if (cadModalAvatar) cadModalAvatar.src = cadAvatarSrc;
+
+  updatePlaytimeRewardUI();
+}
+
+function updatePlaytimeRewardUI() {
+  const bar = $("#cad-playtime-bar");
+  const progressText = $("#cad-playtime-progress-text");
+  const percentText = $("#cad-playtime-percent");
+  const claimBtn = $("#cad-claim-reward-btn");
+  const claimText = $("#cad-claim-reward-text");
+
+  const todayKey = "cad_reward_claimed_" + new Date().toISOString().slice(0, 10);
+  const alreadyClaimed = Boolean(localStorage.getItem(todayKey));
+
+  let playedMinutes = 0;
+  if (typeof window._cadPlaytimeMinutes === "number") {
+    playedMinutes = window._cadPlaytimeMinutes;
+  }
+
+  const percent = Math.min(100, Math.round((playedMinutes / 30) * 100));
+  if (bar) bar.style.width = percent + "%";
+  if (progressText) progressText.textContent = `${playedMinutes} / 30 min`;
+  if (percentText) percentText.textContent = `${percent}%`;
+
+  if (claimBtn && claimText) {
+    if (alreadyClaimed) {
+      claimBtn.disabled = true;
+      claimBtn.classList.remove("is-claimable");
+      claimText.textContent = "Claimed today ✓";
+    } else if (playedMinutes >= 30) {
+      claimBtn.disabled = false;
+      claimBtn.classList.add("is-claimable");
+      claimText.textContent = "Claim $49 reward";
+    } else {
+      claimBtn.disabled = false;
+      claimBtn.classList.remove("is-claimable");
+      claimText.textContent = `Play ${Math.max(1, 30 - playedMinutes)} more min to claim`;
+    }
+  }
 }
 
 function updateResidentAvatar() {
@@ -1813,16 +1915,16 @@ function setupOnboarding() {
   const character = $("#gateway-character");
   const form = $("#character-create-form");
   const existingNames = String(profile.name || "").trim().split(/\s+/);
-  form.elements.firstName.value = profile.firstName || existingNames[0] || "";
-  form.elements.lastName.value = profile.lastName || existingNames.slice(1).join(" ");
-  form.elements.dob.value = profile.dob && profile.dob !== "—" ? profile.dob : "";
-  form.elements.pronouns.value = profile.pronouns && profile.pronouns !== "—" ? profile.pronouns : "";
-  form.elements.height.value = profile.height && profile.height !== "—" ? profile.height : "";
-  form.elements.weight.value = profile.weight || "";
-  form.elements.eyes.value = profile.eyes && profile.eyes !== "—" ? profile.eyes : "";
-  form.elements.occupation.value = profile.occupation && profile.occupation !== "—" ? profile.occupation : "";
+  form.elements.firstName.value = profile.firstName || existingNames[0] || "Eddie";
+  form.elements.lastName.value = profile.lastName || existingNames.slice(1).join(" ") || "Alverez";
+  form.elements.dob.value = profile.dob && profile.dob !== "—" ? profile.dob : "2000-01-01";
+  form.elements.pronouns.value = profile.pronouns && profile.pronouns !== "—" ? profile.pronouns : "Male";
+  form.elements.height.value = profile.height && profile.height !== "—" ? profile.height : "5'9\"";
+  form.elements.weight.value = profile.weight || "160";
+  form.elements.eyes.value = profile.eyes && profile.eyes !== "—" ? profile.eyes : "Brown";
+  form.elements.occupation.value = profile.occupation && profile.occupation !== "—" ? profile.occupation : "None";
   form.elements.borough.value = profile.borough || "Manhattan";
-  form.elements.neighborhood.value = profile.neighborhood && profile.neighborhood !== "—" ? profile.neighborhood : "";
+  form.elements.neighborhood.value = profile.neighborhood && profile.neighborhood !== "—" ? profile.neighborhood : "Downtown";
   const showCharacter = () => {
     choose.hidden = true;
     character.hidden = false;
@@ -1839,11 +1941,11 @@ function setupOnboarding() {
   form.elements.firstName.addEventListener("input", updatePreview);
   form.elements.lastName.addEventListener("input", updatePreview);
   function updatePreview() {
-    const first = form.elements.firstName.value.trim();
-    const last = form.elements.lastName.value.trim();
-    const full = [first, last].filter(Boolean).join(" ") || "Your character";
+    const first = form.elements.firstName.value.trim() || "Eddie";
+    const last = form.elements.lastName.value.trim() || "Alverez";
+    const full = [first, last].filter(Boolean).join(" ") || "Eddie Alverez";
     $("#character-preview-name").textContent = full;
-    $("#character-monogram").textContent = (first[0] || "N").toUpperCase() + (last[0] || "Y").toUpperCase();
+    $("#character-monogram").textContent = (first[0] || "E").toUpperCase() + (last[0] || "A").toUpperCase();
   }
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1866,14 +1968,14 @@ function setupOnboarding() {
     profile = {
       ...profile,
       name, firstName, lastName, dob,
-      pronouns: String(data.get("pronouns") || "—"),
-      height: String(data.get("height") || "").trim() || "—",
-      weight: String(data.get("weight") || "").trim(),
-      eyes: String(data.get("eyes") || "").trim() || "—",
-      occupation: String(data.get("occupation") || "").trim() || "City resident",
+      pronouns: String(data.get("pronouns") || "Male"),
+      height: String(data.get("height") || "").trim() || "5'9\"",
+      weight: String(data.get("weight") || "").trim() || "160",
+      eyes: String(data.get("eyes") || "").trim() || "Brown",
+      occupation: String(data.get("occupation") || "").trim() || "None",
       borough: String(data.get("borough") || "Manhattan"),
-      neighborhood: String(data.get("neighborhood") || "").trim() || "New York",
-      idNo: profile.idNo || makeId()
+      neighborhood: String(data.get("neighborhood") || "").trim() || "Downtown",
+      idNo: profile.idNo || "4C5F46CC"
     };
     submit.disabled = true;
     submit.querySelector("span").textContent = "Creating character…";
@@ -2411,6 +2513,129 @@ async function initialize() {
     }
     document.addEventListener("click",e=>{const b=e.target.closest("[data-leo-action]");if(b)openBoloForm(b.dataset.leoAction==="vehicle-bolo"?"vehicle":"person");});
   renderBolos();
+function setupCadCivilianListeners() {
+  const savedTheme = localStorage.getItem("nycrp.cad_theme");
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark-mode");
+  }
+
+  $("#cad-theme-toggle")?.addEventListener("click", () => {
+    const isDark = document.body.classList.toggle("dark-mode");
+    localStorage.setItem("nycrp.cad_theme", isDark ? "dark" : "light");
+    showToast(isDark ? "Dark theme enabled" : "Light theme enabled");
+  });
+
+  $("#cad-nav-home")?.addEventListener("click", () => {
+    const gateway = $("#entry-gateway");
+    if (gateway) {
+      gateway.hidden = false;
+      document.body.classList.add("onboarding-open");
+      $("#gateway-choose").hidden = false;
+      $("#gateway-character").hidden = true;
+    }
+  });
+
+  $("#cad-logout-btn")?.addEventListener("click", () => {
+    const gateway = $("#entry-gateway");
+    if (gateway) {
+      gateway.hidden = false;
+      document.body.classList.add("onboarding-open");
+      $("#gateway-choose").hidden = false;
+      $("#gateway-character").hidden = true;
+    }
+  });
+
+  $("#cad-docs-btn")?.addEventListener("click", () => {
+    $("#cad-rules-modal")?.showModal();
+  });
+
+  $("#cad-user-chip")?.addEventListener("click", () => {
+    $("#cad-character-modal")?.showModal();
+  });
+
+  $("#cad-view-character")?.addEventListener("click", () => {
+    $("#cad-character-modal")?.showModal();
+  });
+
+  document.addEventListener("click", (event) => {
+    const actionBtn = event.target.closest?.("[data-cad-action]");
+    if (!actionBtn) return;
+    const action = actionBtn.dataset.cadAction;
+    if (action === "911") {
+      $("#cad-911-modal")?.showModal();
+    } else if (action === "character") {
+      $("#cad-character-modal")?.showModal();
+    } else if (action === "housing") {
+      $("#cad-housing-modal")?.showModal();
+    } else if (action === "insurance") {
+      $("#cad-insurance-modal")?.showModal();
+    }
+  });
+
+  $("#cad-edit-char-btn")?.addEventListener("click", () => {
+    $("#cad-character-modal")?.close();
+    openProfileEditor();
+  });
+
+  $("#cad-toggle-physical-id-btn")?.addEventListener("click", () => {
+    const drawer = $("#cad-physical-id-drawer");
+    if (drawer) drawer.hidden = !drawer.hidden;
+  });
+
+  $("#cad-911-form")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const data = new FormData(event.target);
+    const service = data.get("service") || "police";
+    const loc = data.get("location") || "Postal 104";
+    $("#cad-911-modal")?.close();
+    showToast(`🚨 911 Call dispatched to ${String(service).toUpperCase()} for ${loc}. Help is en route!`);
+  });
+
+  document.addEventListener("click", (event) => {
+    const rentBtn = event.target.closest?.("[data-rent-house]");
+    if (!rentBtn) return;
+    const houseName = rentBtn.dataset.rentHouse;
+    const price = Number(rentBtn.dataset.rentPrice) || 350;
+    if ((portfolio.balance || 0) < price) {
+      showToast(`Insufficient funds in wallet (Requires C$ ${price}.00).`);
+      return;
+    }
+    portfolio.balance -= price;
+    savePortfolio();
+    updateProfileUI();
+    rentBtn.textContent = "Leased ✓";
+    rentBtn.disabled = true;
+    showToast(`Leased ${houseName} for C$ ${price}.00/wk! Keys added to your character.`);
+  });
+
+  document.addEventListener("click", (event) => {
+    const enrollBtn = event.target.closest?.("[data-enroll-tier]");
+    if (!enrollBtn) return;
+    const tier = enrollBtn.dataset.enrollTier;
+    $("#cad-insurance-modal")?.close();
+    showToast(`Enrolled in ${tier} Health Insurance! EMS medical bills are now covered.`);
+  });
+
+  $("#cad-claim-reward-btn")?.addEventListener("click", () => {
+    const todayKey = "cad_reward_claimed_" + new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(todayKey)) {
+      showToast("You have already claimed today's daily reward. Come back tomorrow!");
+      return;
+    }
+    let playedMinutes = window._cadPlaytimeMinutes || 0;
+    if (playedMinutes < 30) {
+      showToast(`Play 30 minutes in-game to claim this reward. Currently at ${playedMinutes} / 30 min.`);
+      return;
+    }
+    localStorage.setItem(todayKey, "true");
+    portfolio.balance = (Number(portfolio.balance) || 0) + 49;
+    savePortfolio();
+    updateProfileUI();
+    showToast("Claimed $49.00 daily playtime reward! Added to your wallet.");
+  });
+}
+
+  setupCadCivilianListeners();
   window.addEventListener("popstate", () => activatePage(currentPageFromHash()));
   window.addEventListener("hashchange", () => activatePage(currentPageFromHash()));
   activatePage(currentPageFromHash());

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="200" height="200" fill="url(#bg)"/>
+  
+  <!-- Torso & Suit -->
+  <path d="M 28 200 L 28 152 Q 28 142 42 138 L 84 130 L 116 130 L 158 138 Q 172 142 172 152 L 172 200 Z" fill="#18181b"/>
+  <!-- White shirt V -->
+  <polygon points="82,130 118,130 100,165" fill="#f8fafc"/>
+  <!-- Shirt collar -->
+  <polygon points="82,130 100,148 94,130" fill="#e2e8f0"/>
+  <polygon points="118,130 100,148 106,130" fill="#e2e8f0"/>
+  <!-- Tie -->
+  <polygon points="97,144 103,144 105,152 100,155 95,152" fill="#09090b"/>
+  <polygon points="96,154 104,154 106,188 100,196 94,188" fill="#09090b"/>
+  
+  <!-- Neck -->
+  <rect x="88" y="118" width="24" height="16" fill="#f59e0b" rx="2"/>
+  
+  <!-- Head (Roblox Classic Cylinder) -->
+  <rect x="56" y="44" width="88" height="78" rx="14" fill="#fbbf24"/>
+  <!-- Head shading top -->
+  <ellipse cx="100" cy="46" rx="44" ry="7" fill="#f59e0b" opacity="0.35"/>
+  
+  <!-- Face features (Classic Roblox Smile) -->
+  <!-- Left Eye -->
+  <ellipse cx="78" cy="80" rx="4.5" ry="5.5" fill="#18181b"/>
+  <!-- Right Eye -->
+  <ellipse cx="122" cy="80" rx="4.5" ry="5.5" fill="#18181b"/>
+  <!-- Smile -->
+  <path d="M 85 93 Q 100 106 115 93" fill="none" stroke="#18181b" stroke-width="4.5" stroke-linecap="round"/>
+  
+  <!-- Hair (Classic Roblox parted black hair) -->
+  <path d="M 46 54 C 46 26, 70 20, 100 20 C 136 20, 154 30, 154 54 C 154 62, 148 76, 146 80 C 142 66, 138 52, 134 50 C 122 45, 108 52, 94 48 C 76 43, 62 58, 56 68 C 52 74, 48 76, 46 54 Z" fill="#18181b"/>
+  <!-- Hair highlights/volume -->
+  <path d="M 52 46 C 65 30, 95 24, 125 28 C 142 30, 150 42, 152 50 C 145 40, 130 32, 105 32 C 80 32, 60 40, 52 46 Z" fill="#27272a"/>
+</svg>

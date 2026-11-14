@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#212121">
+    <meta name="theme-color" content="#080a0d">
     <meta name="description" content="Your New York City roleplay profile, all in one place.">
     <title>NYC Roleplay — Profile</title>
     <link rel="icon" type="image/png" href="/favicon.png?v=1">
@@ -45,16 +45,16 @@
           <form class="character-form" id="character-create-form">
             <div class="character-form-heading"><span class="gateway-kicker">CREATE YOUR IDENTITY</span><h2>Character details</h2><p>Fields marked with * are required.</p></div>
             <div class="character-fields">
-              <label>First name *<input name="firstName" required maxlength="18" autocomplete="off" placeholder="e.g. Alex"></label>
-              <label>Last name *<input name="lastName" required maxlength="18" autocomplete="off" placeholder="e.g. Morgan"></label>
+              <label>First name *<input name="firstName" required maxlength="18" autocomplete="off" placeholder="e.g. Eddie"></label>
+              <label>Last name *<input name="lastName" required maxlength="18" autocomplete="off" placeholder="e.g. Alverez"></label>
               <label>Date of birth *<input name="dob" type="date" required min="1900-01-01"></label>
-              <label>Pronouns<select name="pronouns"><option value="">Prefer not to say</option><option>He / Him</option><option>She / Her</option><option>They / Them</option><option>Other</option></select></label>
-              <label>Height<input name="height" maxlength="14" placeholder="e.g. 5 ft 10 in"></label>
-              <label>Weight (lbs)<input name="weight" type="number" min="50" max="700" placeholder="e.g. 170"></label>
+              <label>Pronouns<select name="pronouns"><option value="">Prefer not to say</option><option selected>Male</option><option>Female</option><option>He / Him</option><option>She / Her</option><option>They / Them</option><option>Other</option></select></label>
+              <label>Height<input name="height" maxlength="14" placeholder="e.g. 5'9&quot;"></label>
+              <label>Weight (lbs)<input name="weight" type="number" min="50" max="700" placeholder="e.g. 160"></label>
               <label>Eye color<input name="eyes" maxlength="18" placeholder="e.g. Brown"></label>
-              <label>Occupation<input name="occupation" maxlength="32" placeholder="e.g. Student, mechanic"></label>
+              <label>Occupation<input name="occupation" maxlength="32" placeholder="e.g. None"></label>
               <label>Borough<select name="borough"><option>Manhattan</option><option>Brooklyn</option><option>Queens</option><option>The Bronx</option><option>Staten Island</option></select></label>
-              <label>Neighborhood<input name="neighborhood" maxlength="32" placeholder="e.g. Astoria"></label>
+              <label>Neighborhood<input name="neighborhood" maxlength="32" placeholder="e.g. Downtown"></label>
             </div>
             <div class="character-form-note"><span>ⓘ</span> This is a fictional roleplay character profile. You do not need to enter real-world personal details.</div>
             <button class="gateway-submit" type="submit"><span>Create my character</span><b>→</b></button>
@@ -124,6 +124,63 @@
       </aside>
 
       <main class="main-area" id="app">
+        <header class="cad-topbar" id="cad-topbar">
+          <div class="cad-topbar-left">
+            <a href="#profile" class="cad-brand">
+              <svg class="cad-brand-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+              <span class="cad-brand-text">Oklahoma CAD</span>
+            </a>
+            <nav class="cad-nav-tabs">
+              <button type="button" class="cad-nav-tab" id="cad-nav-home">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zm-9 9h7v7H4v-7zm9 0h7v7h-7v-7z"/>
+                </svg>
+                <span>Home</span>
+              </button>
+              <button type="button" class="cad-nav-tab is-active" id="cad-nav-dashboard" data-route="profile">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M3 3h8v8H3V3zm10 0h8v5h-8V3zm0 7h8v11h-8V10zM3 13h8v8H3v-8z"/>
+                </svg>
+                <span>Dashboard</span>
+              </button>
+            </nav>
+          </div>
+          <div class="cad-topbar-right">
+            <a href="https://discord.gg" target="_blank" rel="noopener" class="cad-top-link" id="cad-main-website">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+              <span>Main website</span>
+            </a>
+            <button type="button" class="cad-icon-btn" id="cad-docs-btn" title="Guidelines & Rules" aria-label="Guidelines and rules">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+              </svg>
+            </button>
+            <div class="cad-user-chip" id="cad-user-chip" title="Account profile">
+              <div class="cad-user-avatar-wrap">
+                <img class="cad-user-avatar" id="cad-topbar-avatar" src="/assets/roblox-avatar-default.svg" alt="Avatar">
+              </div>
+              <div class="cad-user-info">
+                <strong id="cad-user-name">Eddie</strong>
+                <span id="cad-user-role">Civilian</span>
+              </div>
+            </div>
+            <button type="button" class="cad-icon-btn" id="cad-theme-toggle" title="Toggle dark/light mode" aria-label="Toggle theme">
+              <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            </button>
+            <button type="button" class="cad-icon-btn" id="cad-logout-btn" title="Switch role or destination" aria-label="Exit to destination menu">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
+          </div>
+        </header>
+
         <header class="topbar">
           <button class="menu-toggle" id="menu-toggle" aria-label="Open navigation">☰</button>
           <div class="breadcrumb"><span class="breadcrumb-icon">◫</span><span id="breadcrumb-title">Profile</span><span class="crumb-divider">/</span><span class="muted" id="breadcrumb-section">Civilian</span></div>
@@ -135,108 +192,187 @@
         </header>
 
         <div class="page-content">
-          <section class="route-page is-active" data-page="profile">
-          <div class="page-heading">
-            <div>
-              <div class="eyebrow"><span>YOUR CITY IDENTITY</span><i></i><span>01 / 05 BOROUGHS</span></div>
-              <h1>Your profile<span class="heading-period">.</span></h1>
-              <p class="heading-subtitle">A little piece of New York that’s all yours.</p>
-            </div>
-            <button class="button button-outline heading-edit" id="edit-profile-top"><span>✎</span> Edit profile</button>
-          </div>
+          <section class="route-page is-active cad-profile-section" data-page="profile">
+            <div class="cad-main-card">
+              <h1 class="cad-welcome-title">Welcome back, <span id="cad-greeting-name">Eddie</span></h1>
 
-          <section class="dashboard-grid" aria-label="Profile dashboard">
-            <div class="side-rail left-rail">
-              <article class="side-card borough-card">
-                <div class="side-card-top"><span class="section-kicker">YOUR BOROUGH</span><span class="tiny-dot"></span></div>
-                <div class="borough-art" aria-hidden="true"><span class="borough-sun"></span><span class="skyline skyline-back"></span><span class="skyline skyline-front"></span><span class="borough-water"></span><span class="borough-label">NYC <b>05</b></span></div>
-                <h3 id="borough-title">Manhattan</h3>
-                <p id="borough-caption">The city that never slows down.</p>
-                <div class="borough-footer"><span>NEIGHBORHOOD</span><b id="neighborhood-caption">Lower East Side</b></div>
-              </article>
-              <article class="side-card connection-card">
-                <div class="card-icon">⌁</div>
-                <div><span class="section-kicker">YOUR CONNECTION</span><h3 id="connection-name">Not connected</h3><p id="connection-caption">Sign in with Discord to save your profile anywhere.</p></div>
-                <button class="text-link" id="connect-inline">Connect <span>↗</span></button>
-              </article>
-            </div>
-
-            <div class="center-column">
-              <div class="identity-card-wrap">
-                <div class="identity-card" id="identity-card">
-                  <div class="id-face id-front">
-                    <div class="id-grain"></div>
-                    <div class="id-topline"><span>NEW YORK CITY</span><span>RESIDENT IDENTIFICATION</span><span>EST. 1624</span></div>
-                    <div class="id-header">
-                      <div class="id-emblem"><img src="/assets/nyc-mark.png" alt=""><span>NYC</span></div>
-                      <div class="id-title"><span class="id-overline">THE CITY OF NEW YORK</span><strong>RESIDENT CARD</strong><span class="id-subtitle">FIVE BOROUGHS · ONE CITY</span></div>
-                      <div class="id-seal"><span>✦</span><small>NEW<br>YORK</small></div>
+              <div class="cad-dashboard-grid">
+                <!-- Left Column -->
+                <div class="cad-left-column">
+                  <!-- Citizen ID Card -->
+                  <article class="cad-id-card">
+                    <div class="cad-id-header">
+                      <div class="cad-id-header-left">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                          <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/>
+                        </svg>
+                        <span>OKLAHOMA CAD · CITIZEN ID</span>
+                      </div>
+                      <div class="cad-id-code" id="cad-id-number">4C5F46CC</div>
                     </div>
-                    <div class="id-rule"><span></span><i>✦</i><span></span></div>
-                    <div class="id-main">
-                      <div class="portrait-frame" id="resident-portrait-frame"><div class="portrait-sky"></div><div class="portrait-head"><span class="portrait-hair"></span><span class="portrait-eyes"></span><span class="portrait-nose"></span><span class="portrait-smile"></span></div><img class="portrait-image" id="resident-avatar" alt="Your Roblox avatar"><span class="portrait-code" id="portrait-code">NYC · 001</span></div>
-                      <div class="id-details">
-                        <div class="id-field field-name"><small>01 · FULL NAME</small><strong id="id-name">Alex Morgan</strong></div>
-                        <div class="id-field field-compact"><small>02 · DATE OF BIRTH</small><strong id="id-dob">1998-04-18</strong></div>
-                        <div class="id-field field-compact"><small>03 · PRONOUNS</small><strong id="id-pronouns">They / Them</strong></div>
-                        <div class="id-field field-compact"><small>04 · BOROUGH</small><strong id="id-borough">Manhattan</strong></div>
-                        <div class="id-field field-compact"><small>05 · EYES / HEIGHT</small><strong><span id="id-eyes">Hazel</span> <i>·</i> <span id="id-height">5′ 9″</span></strong></div>
-                        <div class="id-field field-job"><small>06 · OCCUPATION</small><strong id="id-job">Neighborhood regular</strong></div>
+                    <div class="cad-id-body">
+                      <div class="cad-id-avatar-frame">
+                        <img id="cad-id-avatar" src="/assets/roblox-avatar-default.svg" alt="Citizen Avatar">
+                      </div>
+                      <div class="cad-id-details">
+                        <div class="cad-id-fullname" id="cad-id-fullname">EDDIE ALVEREZ</div>
+                        <div class="cad-id-attrs">
+                          <div class="cad-id-attr">
+                            <span class="cad-id-label">DOB</span>
+                            <span class="cad-id-value" id="cad-id-dob">Jan 1, 2000</span>
+                          </div>
+                          <div class="cad-id-attr">
+                            <span class="cad-id-label">SEX</span>
+                            <span class="cad-id-value" id="cad-id-sex">Male</span>
+                          </div>
+                          <div class="cad-id-attr">
+                            <span class="cad-id-label">HEIGHT</span>
+                            <span class="cad-id-value" id="cad-id-height">5'9"</span>
+                          </div>
+                          <div class="cad-id-attr">
+                            <span class="cad-id-label">EYES</span>
+                            <span class="cad-id-value" id="cad-id-eyes">Brown</span>
+                          </div>
+                          <div class="cad-id-attr cad-id-attr-full">
+                            <span class="cad-id-label">OCCUPATION</span>
+                            <span class="cad-id-value" id="cad-id-occupation">None</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div class="id-bottom">
-                      <div class="id-number"><small>RESIDENT NO.</small><strong id="id-number">NY 108 · 427 · 319</strong></div>
-                      <div class="id-signature"><span id="id-signature">Alex Morgan</span><small>HOLDER SIGNATURE</small></div>
+                    <div class="cad-id-footer">
+                      <button type="button" class="cad-id-view-link" id="cad-view-character">
+                        <span>View character</span>
+                        <span aria-hidden="true">→</span>
+                      </button>
                     </div>
-                    <div class="id-footer"><span>ROLEPLAY ID · NOT A GOVERNMENT DOCUMENT</span><span>NEW YORK, NY</span></div>
-                  </div>
-                  <div class="id-face id-back">
-                    <div class="id-grain"></div>
-                    <div class="id-topline"><span>NEW YORK CITY</span><span>RESIDENT IDENTIFICATION</span><span>BACK / 02</span></div>
-                    <div class="back-title"><span class="section-kicker">CITY RESIDENT · ID SERIES 2026</span><h2>One city.<br>Infinite stories.</h2></div>
-                    <div class="borough-list"><span>01 <b>MANHATTAN</b></span><span>02 <b>BROOKLYN</b></span><span>03 <b>QUEENS</b></span><span>04 <b>THE BRONX</b></span><span>05 <b>STATEN ISLAND</b></span></div>
-                    <div class="id-microline"></div>
-                    <div class="back-bottom"><img src="/assets/nyc-mark.png" alt=""><span>PROPERTY OF NEW YORK CITY ROLEPLAY<br>RETURN TO CITY HALL IF FOUND</span><strong id="back-id">NY 108 · 427 · 319</strong></div>
-                    <div class="id-footer"><span>ROLEPLAY ID · NOT A GOVERNMENT DOCUMENT</span><span>NEW YORK, NY</span></div>
-                  </div>
-                  <button class="flip-hotspot" id="flip-card" aria-label="Flip resident card"></button>
-                  <div class="uv-overlay" aria-hidden="true"><span>NYC · AUTHENTIC</span><span>◈ ◈ ◈</span></div>
+                  </article>
+
+                  <!-- Daily Playtime Reward Card -->
+                  <article class="cad-reward-card">
+                    <div class="cad-reward-top">
+                      <div class="cad-reward-icon">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                          <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                      </div>
+                      <div class="cad-reward-copy">
+                        <h3>Daily playtime reward</h3>
+                        <p>Play 30 minutes in-game, then claim $49.</p>
+                      </div>
+                    </div>
+                    <div class="cad-reward-progress-wrap">
+                      <div class="cad-reward-labels">
+                        <span id="cad-playtime-progress-text">0 / 30 min</span>
+                        <span id="cad-playtime-percent">0%</span>
+                      </div>
+                      <div class="cad-progress-track">
+                        <div class="cad-progress-bar" id="cad-playtime-bar" style="width: 0%;"></div>
+                      </div>
+                    </div>
+                    <div class="cad-reward-meta">Updates every 30 minutes · last 9:30 AM · next 10:00 AM</div>
+                    <button type="button" class="cad-reward-btn" id="cad-claim-reward-btn">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.65-.5-.65C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1h-2V5c0-.55.45-1 1-1zM9 4c.55 0 1 .45 1 1v1H8c0-.55.45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76V8h2v.76L15.38 12 17 10.83 14.92 8H20v6z"/>
+                      </svg>
+                      <span id="cad-claim-reward-text">Play 30 more min to claim</span>
+                    </button>
+                  </article>
+                </div>
+
+                <!-- Right Column: 8 Action Cards (2 Columns x 4 Rows) -->
+                <div class="cad-action-grid">
+                  <!-- 1. 911 -->
+                  <button type="button" class="cad-action-card" data-cad-action="911">
+                    <div class="cad-action-icon">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M12 2c-.55 0-1 .45-1 1v2c0 .55.45 1 1 1s1-.45 1-1V3c0-.55-.45-1-1-1zm-6.36 4.64l-1.42 1.42c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.42-1.42c.39-.39.39-1.02 0-1.41-.39-.39-1.02-.39-1.41 0zm12.72 0c-.39-.39-1.02-.39-1.41 0-.39.39-.39 1.02 0 1.41l1.42 1.42c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41l-1.42-1.42zM12 7c-2.76 0-5 2.24-5 5v5h10v-5c0-2.76-2.24-5-5-5zm-7 12v2h14v-2H5z"/>
+                      </svg>
+                    </div>
+                    <strong>911</strong>
+                    <small>Call for police, fire or EMS</small>
+                  </button>
+
+                  <!-- 2. Character -->
+                  <button type="button" class="cad-action-card" data-cad-action="character">
+                    <div class="cad-action-icon">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                      </svg>
+                    </div>
+                    <strong>Character</strong>
+                    <small>Details, records and vehicles</small>
+                  </button>
+
+                  <!-- 3. Licenses -->
+                  <button type="button" class="cad-action-card" data-route="licenses">
+                    <div class="cad-action-icon">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm-10 4c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-4 8c0-1.33 2.67-2 4-2s4 .67 4 2v1H6v-1zm12 1h-6v-2h6v2zm0-4h-6v-2h6v2z"/>
+                      </svg>
+                    </div>
+                    <strong>Licenses</strong>
+                    <small>Take tests and renew</small>
+                  </button>
+
+                  <!-- 4. Wallet -->
+                  <button type="button" class="cad-action-card" data-route="wallet">
+                    <div class="cad-action-icon">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                      </svg>
+                    </div>
+                    <strong>Wallet</strong>
+                    <small>Balance, send and pay</small>
+                  </button>
+
+                  <!-- 5. Businesses -->
+                  <button type="button" class="cad-action-card" data-route="businesses">
+                    <div class="cad-action-icon">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4l-1 5v2h1v6h10v-6h4v6h2v-6h1zm-9 4H6v-4h6v4z"/>
+                      </svg>
+                    </div>
+                    <strong>Businesses</strong>
+                    <small>Directory, jobs and clock in</small>
+                  </button>
+
+                  <!-- 6. Shop -->
+                  <button type="button" class="cad-action-card" data-route="shop">
+                    <div class="cad-action-icon">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
+                      </svg>
+                    </div>
+                    <strong>Shop</strong>
+                    <small>ID card themes</small>
+                  </button>
+
+                  <!-- 7. Housing -->
+                  <button type="button" class="cad-action-card" data-cad-action="housing">
+                    <div class="cad-action-icon">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                      </svg>
+                    </div>
+                    <strong>Housing</strong>
+                    <small>Rent a house or mansion</small>
+                  </button>
+
+                  <!-- 8. Health Insurance -->
+                  <button type="button" class="cad-action-card" data-cad-action="insurance">
+                    <div class="cad-action-icon">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35zM11 7v3H8v2h3v3h2v-3h3v-2h-3V7h-2z"/>
+                      </svg>
+                    </div>
+                    <strong>Health Insurance</strong>
+                    <small>Bronze, Silver or Gold cover for EMS bills</small>
+                  </button>
                 </div>
               </div>
-              <div class="card-actions">
-                <button class="button button-small" id="flip-action"><span>⟳</span> Flip card</button>
-                <button class="button button-small" id="uv-action"><span>✧</span> UV light</button>
-                <button class="button button-small" id="download-card"><span>↓</span> Download PNG</button>
-                <span class="action-spacer"></span>
-                <button class="button button-small button-quiet" id="edit-profile"><span>✎</span> Edit</button>
-                <button class="button button-small button-quiet" id="reset-profile"><span>⌫</span> Reset</button>
-              </div>
-
-              <section class="content-panel vehicles-panel">
-                <div class="panel-heading">
-                  <div class="panel-title"><span class="panel-icon">▰</span><div><h2>My vehicles</h2><p>Live vehicles linked to your Roblox account</p></div><span class="count-pill" id="vehicle-count">00</span></div>
-                </div>
-                <div class="vehicle-list" id="vehicle-list"></div>
-                <div class="panel-foot"><span class="tiny-dot"></span><span class="garage-source">CONNECTING TO ER:LC</span><span class="panel-foot-spacer"></span><span id="garage-count">00 RECORDS</span></div>
-              </section>
-            </div>
-
-            <div class="side-rail right-rail">
-              <article class="side-card businesses-card">
-                <div class="side-card-top"><span class="section-kicker">AROUND THE BLOCK</span><button class="icon-button" aria-label="More businesses" data-route="businesses">↗</button></div>
-                <div class="business-visual"><div class="bodega-awning"><span>✦</span><strong>THE<br>GOOD<br>NEWS</strong><small>DELI · GROCERY</small></div><div class="bodega-window"></div><div class="bodega-caption">OPEN LATE · OPEN ALWAYS</div></div>
-                <div class="business-info"><div class="business-avatar">✳</div><div><h3>Good News Bodega</h3><p>East Village · Open now</p></div><span class="open-tag">OPEN</span></div>
-                <p class="business-note">Coffee, a chopped cheese, and a familiar face. Your corner store is waiting.</p>
-                <button class="business-link" data-route="businesses">Explore nearby <span>→</span></button>
-              </article>
-              <article class="side-card wallet-card">
-                <div class="side-card-top"><span class="section-kicker">CITY WALLET</span><span class="wallet-mini">▣</span></div>
-                <div class="wallet-amount"><small>AVAILABLE BALANCE</small><strong id="wallet-balance-side">C$ 3,325.00</strong></div>
-                <div class="wallet-meter"><span></span></div>
-                <div class="wallet-caption"><span>Resident account</span><b>ACTIVE</b></div>
-                <button class="text-link" data-route="wallet">Open wallet <span>↗</span></button>
-              </article>
-              <article class="tip-card"><span class="tip-mark">✳</span><div><span class="section-kicker">A LITTLE LOCAL TIP</span><p>There's always a seat for you on the last train home.</p></div></article>
             </div>
           </section>
           </section>
@@ -386,7 +522,7 @@
           <section class="route-page applications-page" data-page="applications" id="applications-page">
             <div class="page-heading">
               <div><div class="eyebrow"><span>STAFF TOOLS</span><i></i><span>APPLICATIONS</span></div><h1>Application builder<span class="heading-period">.</span></h1><p class="heading-subtitle">Create a form and share its private application link.</p></div>
-              <button class="button button-primary" id="application-publish" type="button">Publish <span>↗</span></button>
+              <div class="application-heading-actions"><button class="button button-outline" id="application-cancel-edit" type="button" hidden>Cancel edit</button><button class="button button-primary" id="application-publish" type="button">Publish <span>↗</span></button></div>
             </div>
             <div class="application-builder-grid">
               <form class="content-panel application-builder" id="application-builder-form">
@@ -515,20 +651,307 @@
       </main>
     </div>
 
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <!-- CAD Modals -->
+    <dialog class="modal cad-modal" id="cad-character-modal">
+      <div class="modal-card cad-modal-card cad-char-modal-card">
+        <div class="cad-modal-header">
+          <div class="cad-modal-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+            </svg>
+          </div>
+          <div>
+            <span class="cad-modal-kicker">CHARACTER MANAGEMENT</span>
+            <h2>Character details &amp; records</h2>
+            <p>Physical traits, legal records, and registered vehicles.</p>
+          </div>
+          <button class="close-modal" type="button" data-close-modal aria-label="Close">×</button>
+        </div>
 
-    <dialog class="modal confirm-modal" id="confirm-modal">
-      <form method="dialog" class="modal-card confirm-card">
-        <div class="modal-heading">
-          <div><span class="section-kicker">PLEASE CONFIRM</span><h2 id="confirm-title">Are you sure?</h2><p id="confirm-message">This action may not be reversible.</p></div>
-          <button class="close-modal" type="button" data-confirm-cancel aria-label="Close">×</button>
+        <div class="cad-char-modal-body">
+          <div class="cad-char-summary">
+            <div class="cad-char-summary-avatar">
+              <img id="cad-modal-char-avatar" src="/assets/roblox-avatar-default.svg" alt="Avatar">
+            </div>
+            <div class="cad-char-summary-info">
+              <h3 id="cad-modal-char-name">Eddie Alverez</h3>
+              <p>ID: <strong id="cad-modal-char-id">4C5F46CC</strong> &middot; <span id="cad-modal-char-borough">Manhattan</span> &middot; <span id="cad-modal-char-job">None</span></p>
+              <div style="margin-top: 8px; display: flex; gap: 8px;">
+                <button type="button" class="button button-outline button-small" id="cad-edit-char-btn">✎ Edit profile</button>
+                <button type="button" class="button button-outline button-small" id="cad-toggle-physical-id-btn">⟳ Physical ID card</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="cad-physical-id-drawer" hidden style="margin: 10px 0;">
+            <div class="identity-card-wrap">
+              <div class="identity-card" id="identity-card">
+                <div class="id-face id-front">
+                  <div class="id-grain"></div>
+                  <div class="id-topline"><span>NEW YORK CITY</span><span>RESIDENT IDENTIFICATION</span><span>EST. 1624</span></div>
+                  <div class="id-header">
+                    <div class="id-emblem"><img src="/assets/nyc-mark.png" alt=""><span>NYC</span></div>
+                    <div class="id-title"><span class="id-overline">THE CITY OF NEW YORK</span><strong>RESIDENT CARD</strong><span class="id-subtitle">FIVE BOROUGHS · ONE CITY</span></div>
+                    <div class="id-seal"><span>✦</span><small>NEW<br>YORK</small></div>
+                  </div>
+                  <div class="id-rule"><span></span><i>✦</i><span></span></div>
+                  <div class="id-main">
+                    <div class="portrait-frame" id="resident-portrait-frame"><div class="portrait-sky"></div><div class="portrait-head"><span class="portrait-hair"></span><span class="portrait-eyes"></span><span class="portrait-nose"></span><span class="portrait-smile"></span></div><img class="portrait-image" id="resident-avatar" alt="Your Roblox avatar"><span class="portrait-code" id="portrait-code">NYC · 001</span></div>
+                    <div class="id-details">
+                      <div class="id-field field-name"><small>01 · FULL NAME</small><strong id="id-name">Eddie Alverez</strong></div>
+                      <div class="id-field field-compact"><small>02 · DATE OF BIRTH</small><strong id="id-dob">2000-01-01</strong></div>
+                      <div class="id-field field-compact"><small>03 · PRONOUNS</small><strong id="id-pronouns">Male</strong></div>
+                      <div class="id-field field-compact"><small>04 · BOROUGH</small><strong id="id-borough">Manhattan</strong></div>
+                      <div class="id-field field-compact"><small>05 · EYES / HEIGHT</small><strong><span id="id-eyes">Brown</span> <i>·</i> <span id="id-height">5'9"</span></strong></div>
+                      <div class="id-field field-job"><small>06 · OCCUPATION</small><strong id="id-job">None</strong></div>
+                    </div>
+                  </div>
+                  <div class="id-bottom">
+                    <div class="id-number"><small>RESIDENT NO.</small><strong id="id-number">4C5F46CC</strong></div>
+                    <div class="id-signature"><span id="id-signature">Eddie Alverez</span><small>HOLDER SIGNATURE</small></div>
+                  </div>
+                  <div class="id-footer"><span>ROLEPLAY ID · NOT A GOVERNMENT DOCUMENT</span><span>NEW YORK, NY</span></div>
+                </div>
+                <div class="id-face id-back">
+                  <div class="id-grain"></div>
+                  <div class="id-topline"><span>NEW YORK CITY</span><span>RESIDENT IDENTIFICATION</span><span>BACK / 02</span></div>
+                  <div class="back-title"><span class="section-kicker">CITY RESIDENT · ID SERIES 2026</span><h2>One city.<br>Infinite stories.</h2></div>
+                  <div class="borough-list"><span>01 <b>MANHATTAN</b></span><span>02 <b>BROOKLYN</b></span><span>03 <b>QUEENS</b></span><span>04 <b>THE BRONX</b></span><span>05 <b>STATEN ISLAND</b></span></div>
+                  <div class="id-microline"></div>
+                  <div class="back-bottom"><img src="/assets/nyc-mark.png" alt=""><span>PROPERTY OF ROLEPLAY<br>RETURN IF FOUND</span><strong id="back-id">4C5F46CC</strong></div>
+                  <div class="id-footer"><span>ROLEPLAY ID · NOT A GOVERNMENT DOCUMENT</span><span>NEW YORK, NY</span></div>
+                </div>
+                <button class="flip-hotspot" id="flip-card" aria-label="Flip resident card"></button>
+                <div class="uv-overlay" aria-hidden="true"><span>AUTHENTIC</span><span>◈ ◈ ◈</span></div>
+              </div>
+            </div>
+            <div class="card-actions" style="margin-top: 10px;">
+              <button class="button button-small" id="flip-action"><span>⟳</span> Flip card</button>
+              <button class="button button-small" id="uv-action"><span>✧</span> UV light</button>
+              <button class="button button-small" id="download-card"><span>↓</span> Download PNG</button>
+              <span class="action-spacer"></span>
+              <button class="button button-small button-quiet" id="edit-profile"><span>✎</span> Edit</button>
+              <button class="button button-small button-quiet" id="reset-profile"><span>⌫</span> Reset</button>
+            </div>
+          </div>
+
+          <div class="cad-char-vehicles">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <h4 style="margin: 0;">Registered Vehicles (<span id="vehicle-count">00</span>)</h4>
+              <span class="garage-source" style="font-size: 11px; color: #64748b;" id="garage-count">00 RECORDS</span>
+            </div>
+            <div class="vehicle-list" id="vehicle-list"></div>
+          </div>
+
+          <!-- Compatibility anchors -->
+          <div hidden>
+            <button id="edit-profile-top"></button>
+            <span id="borough-title"></span>
+            <span id="borough-caption"></span>
+            <span id="neighborhood-caption"></span>
+            <span id="connection-name"></span>
+            <span id="connection-caption"></span>
+            <button id="connect-inline"></button>
+            <span id="wallet-balance-side"></span>
+          </div>
+
+          <div class="cad-modal-actions">
+            <button class="button button-primary" type="button" data-close-modal>Done</button>
+          </div>
         </div>
-        <div class="modal-actions">
-          <button class="button button-outline" type="button" data-confirm-cancel>Cancel</button>
-          <button class="button button-primary" type="button" id="confirm-accept">Continue</button>
-        </div>
-      </form>
+      </div>
     </dialog>
+
+    <!-- 911 Emergency Call Modal -->
+    <dialog class="modal cad-modal" id="cad-911-modal">
+      <div class="modal-card cad-modal-card">
+        <div class="cad-modal-header">
+          <div class="cad-modal-icon cad-icon-emergency">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <path d="M12 2c-.55 0-1 .45-1 1v2c0 .55.45 1 1 1s1-.45 1-1V3c0-.55-.45-1-1-1zm-6.36 4.64l-1.42 1.42c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.42-1.42c.39-.39.39-1.02 0-1.41-.39-.39-1.02-.39-1.41 0zm12.72 0c-.39-.39-1.02-.39-1.41 0-.39.39-.39 1.02 0 1.41l1.42 1.42c.39.39 1.02.39 1.41 0 .39-.39.39-1.02 0-1.41l-1.42-1.42zM12 7c-2.76 0-5 2.24-5 5v5h10v-5c0-2.76-2.24-5-5-5zm-7 12v2h14v-2H5z"/>
+            </svg>
+          </div>
+          <div>
+            <span class="cad-modal-kicker">EMERGENCY DISPATCH</span>
+            <h2>911 Emergency Call</h2>
+            <p>Direct priority line to active Police, Fire and EMS responders.</p>
+          </div>
+          <button class="close-modal" type="button" data-close-modal aria-label="Close">×</button>
+        </div>
+        <form id="cad-911-form" class="cad-modal-form">
+          <label>Emergency Department
+            <select name="service" required>
+              <option value="police">Police Department (NYPD)</option>
+              <option value="fire">Fire &amp; Rescue (FDNY)</option>
+              <option value="ems">Emergency Medical Services (EMS)</option>
+            </select>
+          </label>
+          <label>Location / Postal
+            <input name="location" required placeholder="e.g. Postal 104, Lower East Side" value="Postal 104, Lower East Side">
+          </label>
+          <label>Emergency Situation
+            <textarea name="situation" rows="3" required placeholder="Describe the incident, description of suspects, injuries..."></textarea>
+          </label>
+          <div class="cad-modal-actions">
+            <button class="button button-outline" type="button" data-close-modal>Cancel</button>
+            <button class="button button-danger" type="submit" id="cad-send-911">
+              <span>🚨 Send 911 Call</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+
+    <!-- Housing Modal -->
+    <dialog class="modal cad-modal" id="cad-housing-modal">
+      <div class="modal-card cad-modal-card cad-housing-card">
+        <div class="cad-modal-header">
+          <div class="cad-modal-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+          </div>
+          <div>
+            <span class="cad-modal-kicker">HOUSING DIRECTORY</span>
+            <h2>Rent a house or mansion</h2>
+            <p>Select a residence to lease across the boroughs.</p>
+          </div>
+          <button class="close-modal" type="button" data-close-modal aria-label="Close">×</button>
+        </div>
+        <div class="cad-housing-list">
+          <div class="cad-housing-item">
+            <div class="cad-housing-badge">APARTMENT</div>
+            <h3>Downtown Studio</h3>
+            <p class="cad-housing-loc">Lower East Side, Manhattan</p>
+            <div class="cad-housing-specs"><span>1 Bed</span><span>1 Bath</span><span>Street parking</span></div>
+            <div class="cad-housing-foot">
+              <span class="cad-housing-price">C$ 350 <small>/ week</small></span>
+              <button type="button" class="button button-outline button-small" data-rent-house="Downtown Studio" data-rent-price="350">Rent now</button>
+            </div>
+          </div>
+          <div class="cad-housing-item">
+            <div class="cad-housing-badge">TOWNHOUSE</div>
+            <h3>Brooklyn Brownstone</h3>
+            <p class="cad-housing-loc">Brooklyn Heights</p>
+            <div class="cad-housing-specs"><span>3 Beds</span><span>2 Baths</span><span>Private garage</span></div>
+            <div class="cad-housing-foot">
+              <span class="cad-housing-price">C$ 750 <small>/ week</small></span>
+              <button type="button" class="button button-outline button-small" data-rent-house="Brooklyn Brownstone" data-rent-price="750">Rent now</button>
+            </div>
+          </div>
+          <div class="cad-housing-item">
+            <div class="cad-housing-badge">LUXURY</div>
+            <h3>Upper East Side Penthouse</h3>
+            <p class="cad-housing-loc">Upper East Side, Manhattan</p>
+            <div class="cad-housing-specs"><span>4 Beds</span><span>3.5 Baths</span><span>Helipad access</span></div>
+            <div class="cad-housing-foot">
+              <span class="cad-housing-price">C$ 1,800 <small>/ week</small></span>
+              <button type="button" class="button button-outline button-small" data-rent-house="Upper East Side Penthouse" data-rent-price="1800">Rent now</button>
+            </div>
+          </div>
+          <div class="cad-housing-item">
+            <div class="cad-housing-badge">MANSION</div>
+            <h3>Waterfront Estate</h3>
+            <p class="cad-housing-loc">Todt Hill, Staten Island</p>
+            <div class="cad-housing-specs"><span>6 Beds</span><span>5 Baths</span><span>Private dock &amp; pool</span></div>
+            <div class="cad-housing-foot">
+              <span class="cad-housing-price">C$ 3,200 <small>/ week</small></span>
+              <button type="button" class="button button-outline button-small" data-rent-house="Waterfront Estate" data-rent-price="3200">Rent now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Health Insurance Modal -->
+    <dialog class="modal cad-modal" id="cad-insurance-modal">
+      <div class="modal-card cad-modal-card cad-insurance-card">
+        <div class="cad-modal-header">
+          <div class="cad-modal-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35zM11 7v3H8v2h3v3h2v-3h3v-2h-3V7h-2z"/>
+            </svg>
+          </div>
+          <div>
+            <span class="cad-modal-kicker">HEALTH INSURANCE</span>
+            <h2>Bronze, Silver or Gold cover for EMS bills</h2>
+            <p>Protect yourself against medical emergency transportation and hospital costs.</p>
+          </div>
+          <button class="close-modal" type="button" data-close-modal aria-label="Close">×</button>
+        </div>
+        <div class="cad-insurance-tiers">
+          <div class="cad-tier-item">
+            <div class="cad-tier-name bronze">BRONZE COVER</div>
+            <div class="cad-tier-price">C$ 15 <small>/ week</small></div>
+            <ul class="cad-tier-features">
+              <li>50% EMS transport bill covered</li>
+              <li>Basic emergency room treatment</li>
+              <li>Standard prescription subsidy</li>
+            </ul>
+            <button type="button" class="button button-outline button-small" data-enroll-tier="Bronze">Choose Bronze</button>
+          </div>
+          <div class="cad-tier-item popular">
+            <div class="cad-tier-badge">RECOMMENDED</div>
+            <div class="cad-tier-name silver">SILVER COVER</div>
+            <div class="cad-tier-price">C$ 40 <small>/ week</small></div>
+            <ul class="cad-tier-features">
+              <li>80% EMS transport &amp; ambulance</li>
+              <li>Full trauma care coverage</li>
+              <li>Priority EMS hospital routing</li>
+            </ul>
+            <button type="button" class="button button-primary button-small" data-enroll-tier="Silver">Choose Silver</button>
+          </div>
+          <div class="cad-tier-item">
+            <div class="cad-tier-name gold">GOLD COVER</div>
+            <div class="cad-tier-price">C$ 85 <small>/ week</small></div>
+            <ul class="cad-tier-features">
+              <li>100% full EMS bills covered ($0 co-pay)</li>
+              <li>Priority medevac air response</li>
+              <li>VIP hospital recovery suite</li>
+            </ul>
+            <button type="button" class="button button-outline button-small" data-enroll-tier="Gold">Choose Gold</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Rules & Guide Modal -->
+    <dialog class="modal cad-modal" id="cad-rules-modal">
+      <div class="modal-card cad-modal-card">
+        <div class="cad-modal-header">
+          <div class="cad-modal-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+          </div>
+          <div>
+            <span class="cad-modal-kicker">COMMUNITY GUIDE</span>
+            <h2>CAD &amp; Roleplay Guidelines</h2>
+            <p>Rules and standards for civilian life in the city.</p>
+          </div>
+          <button class="close-modal" type="button" data-close-modal aria-label="Close">×</button>
+        </div>
+        <div class="cad-rules-body">
+          <div class="cad-rule-item">
+            <strong>1. Realistic Roleplay (Value Life)</strong>
+            <p>Keep your actions realistic and in line with real life emergency and civilian situations. Value your life at all times during encounters.</p>
+          </div>
+          <div class="cad-rule-item">
+            <strong>2. Accurate 911 Calls</strong>
+            <p>Use 911 only for genuine roleplay emergencies (police, fire, or EMS). Include your nearest postal and concise incident details.</p>
+          </div>
+          <div class="cad-rule-item">
+            <strong>3. Character &amp; Vehicle Registration</strong>
+            <p>Keep your licenses and vehicles properly registered in the CAD to avoid citations or impounds during traffic stops.</p>
+          </div>
+        </div>
+        <div class="cad-modal-actions">
+          <button class="button button-primary" type="button" data-close-modal>Understood</button>
+        </div>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <dialog class="modal" id="profile-modal">
       <form method="dialog" class="modal-card" id="profile-form">
