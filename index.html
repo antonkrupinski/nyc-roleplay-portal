@@ -10,9 +10,56 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css?v=1.0.43">
+    <link rel="stylesheet" href="/styles.css?v=1.0.44">
   </head>
   <body>
+
+    <section class="entry-gateway" id="entry-gateway" aria-label="Choose your roleplay destination" hidden>
+      <header class="gateway-header">
+        <a class="gateway-brand" href="#" aria-label="NYC Roleplay home"><span class="gateway-brand-mark">NY</span><span><strong>NYC ROLEPLAY</strong><small>COMMUNITY PORTAL</small></span></a>
+        <div class="gateway-header-note"><span class="gateway-live-dot"></span> NEW YORK CITY · ROLEPLAY SERVICES</div>
+      </header>
+      <div class="gateway-content" id="gateway-choose">
+        <div class="gateway-intro"><span class="gateway-kicker">YOUR CITY. YOUR STORY.</span><h1>Where will you<br><em>make your mark?</em></h1><p>Choose a destination to get started in New York City.</p></div>
+        <div class="gateway-grid">
+          <button class="gateway-card gateway-civilian" type="button" data-gateway-civilian>
+            <span class="gateway-card-top"><span class="gateway-card-icon">♙</span><span class="gateway-card-status">OPEN ACCESS</span></span>
+            <span class="gateway-card-copy"><strong>Civilian</strong><small>Create your character, build a life, own vehicles and explore the city.</small><b>Enter civilian life <span>↗</span></b></span>
+            <span class="gateway-card-art civilian-art"><span class="art-sun"></span><span class="art-person">♟</span><span class="art-city">NYC</span></span>
+          </button>
+          <button class="gateway-card gateway-locked" type="button" aria-disabled="true"><span class="gateway-card-top"><span class="gateway-card-icon">⌑</span><span class="gateway-card-status">RESTRICTED</span></span><span class="gateway-card-copy"><strong>Law Enforcement</strong><small>Police, patrol, records and department operations.</small><b>Department access required</b></span><span class="gateway-card-art police-art"><span>✦</span></span></button>
+          <button class="gateway-card gateway-locked" type="button" aria-disabled="true"><span class="gateway-card-top"><span class="gateway-card-icon">◉</span><span class="gateway-card-status">RESTRICTED</span></span><span class="gateway-card-copy"><strong>Dispatch</strong><small>Coordinate emergency calls and keep units moving.</small><b>Department access required</b></span><span class="gateway-card-art dispatch-art"><span>911</span></span></button>
+          <button class="gateway-card gateway-locked" type="button" aria-disabled="true"><span class="gateway-card-top"><span class="gateway-card-icon">✚</span><span class="gateway-card-status">RESTRICTED</span></span><span class="gateway-card-copy"><strong>Fire &amp; EMS</strong><small>Respond to incidents and support the city.</small><b>Department access required</b></span><span class="gateway-card-art fire-art"><span>✚</span></span></button>
+          <button class="gateway-card gateway-locked" type="button" aria-disabled="true"><span class="gateway-card-top"><span class="gateway-card-icon">▰</span><span class="gateway-card-status">RESTRICTED</span></span><span class="gateway-card-copy"><strong>Department of Transportation</strong><small>Roads, traffic, towing and city infrastructure.</small><b>Department access required</b></span><span class="gateway-card-art dot-art"><span>NYC</span></span></button>
+        </div>
+        <footer class="gateway-footer"><span>NEW YORK CITY ROLEPLAY</span><span>FIVE BOROUGHS · ONE CITY</span><span>© NYC ROLEPLAY</span></footer>
+      </div>
+      <div class="gateway-content gateway-character" id="gateway-character" hidden>
+        <button class="gateway-back" type="button" data-gateway-back>← Back to destinations</button>
+        <div class="character-layout">
+          <div class="character-intro"><span class="gateway-kicker">CIVILIAN REGISTRATION · 01</span><h1>Every New Yorker<br>has a <em>story.</em></h1><p>Start yours by creating your roleplay character. Use fictional details, not your real personal information.</p><div class="character-preview"><span class="preview-monogram" id="character-monogram">NY</span><span><strong id="character-preview-name">Your character</strong><small>NEW YORK CITY RESIDENT</small></span><span class="preview-sparkle">✦</span></div></div>
+          <form class="character-form" id="character-create-form">
+            <div class="character-form-heading"><span class="gateway-kicker">CREATE YOUR IDENTITY</span><h2>Character details</h2><p>Fields marked with * are required.</p></div>
+            <div class="character-fields">
+              <label>First name *<input name="firstName" required maxlength="18" autocomplete="off" placeholder="e.g. Alex"></label>
+              <label>Last name *<input name="lastName" required maxlength="18" autocomplete="off" placeholder="e.g. Morgan"></label>
+              <label>Date of birth *<input name="dob" type="date" required min="1900-01-01"></label>
+              <label>Pronouns<select name="pronouns"><option value="">Prefer not to say</option><option>He / Him</option><option>She / Her</option><option>They / Them</option><option>Other</option></select></label>
+              <label>Height<input name="height" maxlength="14" placeholder="e.g. 5 ft 10 in"></label>
+              <label>Weight (lbs)<input name="weight" type="number" min="50" max="700" placeholder="e.g. 170"></label>
+              <label>Eye color<input name="eyes" maxlength="18" placeholder="e.g. Brown"></label>
+              <label>Occupation<input name="occupation" maxlength="32" placeholder="e.g. Student, mechanic"></label>
+              <label>Borough<select name="borough"><option>Manhattan</option><option>Brooklyn</option><option>Queens</option><option>The Bronx</option><option>Staten Island</option></select></label>
+              <label>Neighborhood<input name="neighborhood" maxlength="32" placeholder="e.g. Astoria"></label>
+            </div>
+            <div class="character-form-note"><span>ⓘ</span> This is a fictional roleplay character profile. You do not need to enter real-world personal details.</div>
+            <button class="gateway-submit" type="submit"><span>Create my character</span><b>→</b></button>
+            <p class="character-error" id="character-create-error" role="alert"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+
     <div class="app-shell">
       <aside class="sidebar" id="sidebar">
         <a class="brand" href="#profile" data-route="profile" aria-label="New York City Roleplay home">
@@ -510,6 +557,6 @@
         <div class="connect-foot"><span>PRIVATE BY DEFAULT</span><i>·</i><span>ROLEPLAY ONLY</span><i>·</i><span>MADE FOR NYC</span></div>
       </form>
     </dialog>
-  <script src="/app.js?v=1.0.43"></script>
+  <script src="/app.js?v=1.0.44"></script>
   </body>
 </html>
