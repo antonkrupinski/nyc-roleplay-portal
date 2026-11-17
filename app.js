@@ -2514,16 +2514,7 @@ async function initialize() {
     document.addEventListener("click",e=>{const b=e.target.closest("[data-leo-action]");if(b)openBoloForm(b.dataset.leoAction==="vehicle-bolo"?"vehicle":"person");});
   renderBolos();
 function setupCadCivilianListeners() {
-  const savedTheme = localStorage.getItem("nycrp.cad_theme");
-  if (savedTheme === "dark") {
-    document.body.classList.add("dark-mode");
-  }
-
-  $("#cad-theme-toggle")?.addEventListener("click", () => {
-    const isDark = document.body.classList.toggle("dark-mode");
-    localStorage.setItem("nycrp.cad_theme", isDark ? "dark" : "light");
-    showToast(isDark ? "Dark theme enabled" : "Light theme enabled");
-  });
+  document.body.classList.add("dark-mode");
 
   $("#cad-nav-home")?.addEventListener("click", () => {
     const gateway = $("#entry-gateway");
