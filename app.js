@@ -1916,9 +1916,46 @@ function openBoloForm(kind) {
 }
 
 
+function enterCivilianDashboard() {
+  const gateway = $("#entry-gateway");
+  if (gateway) {
+    gateway.hidden = true;
+    document.body.classList.remove("onboarding-open");
+  }
+  updateProfileUI();
+  activatePage("profile", true);
+}
+
 function setupOnboarding(needsCharacter = true) {
   const gateway = $("#entry-gateway");
   if (!gateway) return;
+
+  // Always wire the Civilian button — whether or not we need character creation.
+  // If the user already has a character, clicking Civilian goes straight to dashboard.
+  const civilianBtn = $("[data-gateway-civilian]");
+  if (civilianBtn) {
+    civilianBtn.addEventListener("click", () => {
+      if (!needsCharacter) {
+        // Profile already exists — enter dashboard directly
+        enterCivilianDashboard();
+        return;
+      }
+      if (currentUser) {
+        showCreateForm();
+      } else {
+        const chars = getLocalCharacters();
+        if (chars.length === 0) {
+          showCreateForm();
+        } else {
+          enterCivilianDashboard();
+        }
+      }
+    });
+  }
+
+  function getLocalCharacters() {
+    try { return JSON.parse(localStorage.getItem(charactersKey) || "[]"); } catch { return []; }
+  }
 
   // If the user is logged in and already has a character, skip gateway entirely.
   if (!needsCharacter) {
@@ -1928,28 +1965,23 @@ function setupOnboarding(needsCharacter = true) {
     return;
   }
 
+
   const choose = $("#gateway-choose");
   const charSelect = $("#gateway-character-select");
   const character = $("#gateway-character");
   const form = $("#character-create-form");
   const grid = $("#char-select-grid");
 
-  function getCharacters() {
-    try { return JSON.parse(localStorage.getItem(charactersKey) || "[]"); } catch { return []; }
-  }
 
   function enterWithCharacter(char) {
     profile = { ...defaultProfile, ...char };
     localStorage.setItem(activeCharKey, char.idNo);
-    gateway.hidden = true;
-    document.body.classList.remove("onboarding-open");
-    updateProfileUI();
-    activatePage("profile", true);
+    enterCivilianDashboard();
     showToast("Welcome back, " + (char.firstName || char.name || "Civilian") + ".");
   }
 
   function renderCharSelect() {
-    const chars = getCharacters();
+    const chars = getLocalCharacters();
     grid.innerHTML = "";
     chars.forEach((char) => {
       const fn = char.firstName || (char.name || "?").split(" ")[0];
@@ -2016,23 +2048,9 @@ function setupOnboarding(needsCharacter = true) {
     choose.hidden = false;
   };
 
-  $("[data-gateway-civilian]").addEventListener("click", () => {
-    if (currentUser) {
-      // Logged-in: always go to create form (server has one profile per account)
-      showCreateForm();
-    } else {
-      const chars = getCharacters();
-      if (chars.length === 0) {
-        showCreateForm();
-      } else {
-        // Guest with 1 existing character — enter directly
-        enterWithCharacter(chars[0]);
-      }
-    }
-  });
 
   $("[data-gateway-back]").addEventListener("click", () => {
-    const chars = getCharacters();
+    const chars = getLocalCharacters();
     if (chars.length > 0) {
       showCharacterSelect();
     } else {
@@ -2068,7 +2086,7 @@ function setupOnboarding(needsCharacter = true) {
       $("#character-create-error").textContent = "Enter a valid character date of birth.";
       return;
     }
-    const chars = getCharacters();
+    const chars = getLocalCharacters();
     if (chars.length >= MAX_CHARACTERS) {
       $("#character-create-error").textContent = "You already have " + MAX_CHARACTERS + " characters. Delete one to create another.";
       return;
