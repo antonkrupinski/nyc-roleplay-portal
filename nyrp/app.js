@@ -60,7 +60,7 @@ const pageInfo = {
 const profileKey = "nycrp.profile.v1";
 const charactersKey = "nycrp.characters.v1";
 const activeCharKey = "nycrp.active-character.v1";
-const MAX_CHARACTERS = 3;
+const MAX_CHARACTERS = 1;
 const vehicleKey = "nycrp.vehicles.v1";
 const marketKey = "nycrp.paper-portfolio.v1";
 const defaultProfile = { ...SAMPLE_PROFILE };
@@ -1916,9 +1916,17 @@ function openBoloForm(kind) {
 }
 
 
-function setupOnboarding() {
+function setupOnboarding(needsCharacter = true) {
   const gateway = $("#entry-gateway");
   if (!gateway) return;
+
+  // If the user is logged in and already has a character, skip gateway entirely.
+  if (!needsCharacter) {
+    gateway.hidden = true;
+    document.body.classList.remove("onboarding-open");
+    activatePage("profile", true);
+    return;
+  }
 
   const choose = $("#gateway-choose");
   const charSelect = $("#gateway-character-select");
@@ -2009,11 +2017,17 @@ function setupOnboarding() {
   };
 
   $("[data-gateway-civilian]").addEventListener("click", () => {
-    const chars = getCharacters();
-    if (chars.length === 0) {
+    if (currentUser) {
+      // Logged-in: always go to create form (server has one profile per account)
       showCreateForm();
     } else {
-      showCharacterSelect();
+      const chars = getCharacters();
+      if (chars.length === 0) {
+        showCreateForm();
+      } else {
+        // Guest with 1 existing character — enter directly
+        enterWithCharacter(chars[0]);
+      }
     }
   });
 
@@ -2070,7 +2084,7 @@ function setupOnboarding() {
       occupation: String(data.get("occupation") || "").trim() || "None",
       borough: String(data.get("borough") || "Manhattan"),
       neighborhood: String(data.get("neighborhood") || "").trim() || "Downtown",
-      idNo: makeId()
+      idNo: currentUser ? (profile.idNo || "") : makeId()
     };
     profile = { ...newChar };
     submit.disabled = true;
@@ -2140,8 +2154,12 @@ async function initialize() {
     localStorage.removeItem(marketKey);
   }
   updateProfileUI();
-  setupOnboarding();
-  if (currentUser) await loadDepartments();
+  // Skip gateway if the user already has a character set up.
+  const needsCharacter = currentUser
+    ? (!profile.firstName || profile.firstName.trim() === "")
+    : (JSON.parse(localStorage.getItem(charactersKey) || "[]").length === 0);
+  setupOnboarding(needsCharacter);
+    if (currentUser) await loadDepartments();
   bindModerationAutocomplete("#moderation-user-search", "#moderation-user-suggestions");
   bindModerationAutocomplete("#moderation-logs-search", "#moderation-log-suggestions");
   $("#application-question-list").innerHTML = applicationQuestionRowTemplate(1);
