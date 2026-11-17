@@ -270,7 +270,7 @@ h1, h2, h3, p { margin: 0; }
 .page-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; padding: 13px 0 2px; border-top: 1px solid var(--line); color: #515960; font-size: 7px; letter-spacing: .14em; }
 .page-footer i { margin-left: 5px; color: #847b5e; font-style: normal; }
 
-.modal { width: min(520px, calc(100% - 28px)); max-width: none; max-height: min(90vh, 780px); padding: 0; overflow: auto; border: 1px solid #2c3339; border-radius: 14px; color: var(--text); background: #101418; box-shadow: 0 30px 100px rgba(0,0,0,.7); }
+.modal { width: min(520px, calc(100% - 28px)); max-width: none; max-height: min(90vh, 860px); padding: 0; overflow: auto; border: 1px solid #2c3339; border-radius: 14px; color: var(--text); background: #101418; box-shadow: 0 30px 100px rgba(0,0,0,.7); }
 .modal::backdrop { background: rgba(2,4,6,.73); backdrop-filter: blur(6px); }
 .modal-card { padding: 25px; }
 .modal-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 21px; }
@@ -3017,8 +3017,8 @@ body.cad-view .page-content {
   border-top: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 26px;
   padding: 32px 36px;
-  max-width: 600px;
-  width: 90vw;
+  max-width: 760px;
+  width: 92vw;
   box-shadow: 0 35px 100px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.28);
   backdrop-filter: blur(40px) saturate(200%);
   -webkit-backdrop-filter: blur(40px) saturate(200%);
@@ -3303,12 +3303,16 @@ body.cad-view .page-content {
 
 /* Character Modal — Apple Liquid Glass */
 .cad-char-modal-card {
-  max-width: 720px;
+  max-width: 820px;
+  width: 94vw;
 }
 .cad-char-modal-body {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(85vh - 160px);
 }
 .cad-char-summary {
   display: flex;
@@ -3589,8 +3593,8 @@ body.cad-view .page-content {
   border-radius: 24px !important;
   box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05) inset !important;
   padding: 32px !important;
-  max-width: 580px !important;
-  width: 90vw !important;
+  max-width: 820px !important;
+  width: 94vw !important;
   position: relative;
   overflow: hidden;
 }
@@ -3717,4 +3721,45 @@ button.close-modal:hover {
   background: rgba(251,191,36,0.15);
   color: #fbbf24;
   border-color: rgba(251,191,36,0.3);
+}
+
+/* ─── Modal size fix: fit ID card content ──────────────────────────────────── */
+dialog.cad-modal {
+  width: min(820px, calc(100vw - 24px));
+  max-width: none;
+  max-height: min(92vh, 920px);
+  overflow: auto;
+  padding: 0;
+}
+
+.cad-modal .cad-modal-card,
+.cad-char-modal-card {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.cad-char-modal-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(85vh - 160px);
+}
+
+/* Make the physical ID card container fill width properly */
+.identity-card-wrap {
+  width: 100%;
+  overflow: hidden;
+}
+
+.identity-card {
+  width: 100%;
+  min-width: 0;
+}
+
+/* ID card action buttons row — wrap on small screens */
+.cad-id-actions,
+#cad-physical-id-drawer > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
