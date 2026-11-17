@@ -38,6 +38,18 @@
         </div>
         <footer class="gateway-footer"><span>NEW YORK CITY ROLEPLAY</span><span>FIVE BOROUGHS · ONE CITY</span><span>© NYC ROLEPLAY</span></footer>
       </div>
+      <!-- Character Select Screen -->
+      <div class="gateway-content gateway-character-select" id="gateway-character-select" hidden>
+        <div class="char-select-header">
+          <span class="gateway-kicker">CIVILIAN PORTAL · SELECT CHARACTER</span>
+          <h1>Who are you <em>today?</em></h1>
+          <p>Choose an existing character or create a new one. You can have up to 3 characters.</p>
+        </div>
+        <div class="char-select-grid" id="char-select-grid">
+          <!-- populated by JS -->
+        </div>
+      </div>
+
       <div class="gateway-content gateway-character" id="gateway-character" hidden>
         <button class="gateway-back" type="button" data-gateway-back>← Back to destinations</button>
         <div class="character-layout">
@@ -127,10 +139,8 @@
         <header class="cad-topbar" id="cad-topbar">
           <div class="cad-topbar-left">
             <a href="#profile" class="cad-brand">
-              <svg class="cad-brand-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-              <span class="cad-brand-text">Oklahoma CAD</span>
+              <img src="https://media.discordapp.net/attachments/1563648821055983741/1563722939050889266/bd4d1c585fa807dc04376ccd30b74f96.png?ex=6afda539&is=6afc53b9&hm=89f382204bc1b95c2f01728fe63a58c35c66cb6d93d79e6f9b0adc87c59de9ec&=&format=webp&quality=lossless" alt="NYC CAD" class="cad-brand-logo">
+              <span class="cad-brand-text">New York City CAD</span>
             </a>
             <nav class="cad-nav-tabs">
               <button type="button" class="cad-nav-tab" id="cad-nav-home">
@@ -201,7 +211,7 @@
                         <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
                           <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/>
                         </svg>
-                        <span>OKLAHOMA CAD · CITIZEN ID</span>
+                        <span>NEW YORK CITY CAD · CITIZEN ID</span>
                       </div>
                       <div class="cad-id-code" id="cad-id-number">4C5F46CC</div>
                     </div>

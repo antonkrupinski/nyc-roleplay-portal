@@ -58,6 +58,9 @@ const pageInfo = {
 };
 
 const profileKey = "nycrp.profile.v1";
+const charactersKey = "nycrp.characters.v1";
+const activeCharKey = "nycrp.active-character.v1";
+const MAX_CHARACTERS = 3;
 const vehicleKey = "nycrp.vehicles.v1";
 const marketKey = "nycrp.paper-portfolio.v1";
 const defaultProfile = { ...SAMPLE_PROFILE };
@@ -896,6 +899,13 @@ async function saveProfile() {
     if (result.portfolio) portfolio = result.portfolio;
   } else {
     localStorage.setItem(profileKey, JSON.stringify(profile));
+    // Keep characters array in sync
+    const chars = JSON.parse(localStorage.getItem(charactersKey) || "[]");
+    const idx = chars.findIndex(c => c.idNo === profile.idNo);
+    if (idx >= 0) chars[idx] = { ...profile };
+    else chars.push({ ...profile });
+    localStorage.setItem(charactersKey, JSON.stringify(chars));
+    localStorage.setItem(activeCharKey, profile.idNo);
   }
 }
 
@@ -1909,44 +1919,124 @@ function openBoloForm(kind) {
 function setupOnboarding() {
   const gateway = $("#entry-gateway");
   if (!gateway) return;
-  gateway.hidden = false;
-  document.body.classList.add("onboarding-open");
+
   const choose = $("#gateway-choose");
+  const charSelect = $("#gateway-character-select");
   const character = $("#gateway-character");
   const form = $("#character-create-form");
-  const existingNames = String(profile.name || "").trim().split(/\s+/);
-  form.elements.firstName.value = profile.firstName || existingNames[0] || "Eddie";
-  form.elements.lastName.value = profile.lastName || existingNames.slice(1).join(" ") || "Alverez";
-  form.elements.dob.value = profile.dob && profile.dob !== "—" ? profile.dob : "2000-01-01";
-  form.elements.pronouns.value = profile.pronouns && profile.pronouns !== "—" ? profile.pronouns : "Male";
-  form.elements.height.value = profile.height && profile.height !== "—" ? profile.height : "5'9\"";
-  form.elements.weight.value = profile.weight || "160";
-  form.elements.eyes.value = profile.eyes && profile.eyes !== "—" ? profile.eyes : "Brown";
-  form.elements.occupation.value = profile.occupation && profile.occupation !== "—" ? profile.occupation : "None";
-  form.elements.borough.value = profile.borough || "Manhattan";
-  form.elements.neighborhood.value = profile.neighborhood && profile.neighborhood !== "—" ? profile.neighborhood : "Downtown";
-  const showCharacter = () => {
+  const grid = $("#char-select-grid");
+
+  function getCharacters() {
+    try { return JSON.parse(localStorage.getItem(charactersKey) || "[]"); } catch { return []; }
+  }
+
+  function enterWithCharacter(char) {
+    profile = { ...defaultProfile, ...char };
+    localStorage.setItem(activeCharKey, char.idNo);
+    gateway.hidden = true;
+    document.body.classList.remove("onboarding-open");
+    updateProfileUI();
+    activatePage("profile", true);
+    showToast("Welcome back, " + (char.firstName || char.name || "Civilian") + ".");
+  }
+
+  function renderCharSelect() {
+    const chars = getCharacters();
+    grid.innerHTML = "";
+    chars.forEach((char) => {
+      const fn = char.firstName || (char.name || "?").split(" ")[0];
+      const ln = char.lastName || (char.name || "?").split(" ").slice(1).join(" ") || "?";
+      const initials = ((fn[0] || "?") + (ln[0] || "?")).toUpperCase();
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "char-select-card";
+      btn.innerHTML =
+        '<span class="char-select-monogram">' + initials + '</span>' +
+        '<span class="char-select-info">' +
+          '<strong>' + escapeHtml(char.name || fn + " " + ln) + '</strong>' +
+          '<small>' + escapeHtml(char.borough || "New York City") + ' · ' + escapeHtml(char.occupation || "Civilian") + '</small>' +
+        '</span>' +
+        '<span class="char-select-arrow">→</span>';
+      btn.addEventListener("click", () => enterWithCharacter(char));
+      grid.appendChild(btn);
+    });
+
+    if (chars.length < MAX_CHARACTERS) {
+      const newBtn = document.createElement("button");
+      newBtn.type = "button";
+      newBtn.className = "char-select-card char-select-new";
+      newBtn.innerHTML =
+        '<span class="char-select-monogram char-new-icon">+</span>' +
+        '<span class="char-select-info">' +
+          '<strong>Create new character</strong>' +
+          '<small>' + chars.length + ' of ' + MAX_CHARACTERS + ' slots used</small>' +
+        '</span>' +
+        '<span class="char-select-arrow">→</span>';
+      newBtn.addEventListener("click", showCreateForm);
+      grid.appendChild(newBtn);
+    } else {
+      const full = document.createElement("p");
+      full.className = "char-select-full";
+      full.textContent = "You have reached the maximum of " + MAX_CHARACTERS + " characters.";
+      grid.appendChild(full);
+    }
+  }
+
+  function showCharacterSelect() {
     choose.hidden = true;
+    charSelect.hidden = false;
+    character.hidden = true;
+    renderCharSelect();
+  }
+
+  function showCreateForm() {
+    choose.hidden = true;
+    charSelect.hidden = true;
     character.hidden = false;
     $("#character-create-error").textContent = "";
-    $("#gateway-character").scrollTop = 0;
+    character.scrollTop = 0;
+    form.reset();
+    form.elements.pronouns.value = "Male";
+    form.elements.borough.value = "Manhattan";
+    updatePreview();
     form.elements.firstName.focus();
-  };
+  }
+
   const showChoices = () => {
     character.hidden = true;
+    charSelect.hidden = true;
     choose.hidden = false;
   };
-  $("[data-gateway-civilian]").addEventListener("click", showCharacter);
-  $("[data-gateway-back]").addEventListener("click", showChoices);
+
+  $("[data-gateway-civilian]").addEventListener("click", () => {
+    const chars = getCharacters();
+    if (chars.length === 0) {
+      showCreateForm();
+    } else {
+      showCharacterSelect();
+    }
+  });
+
+  $("[data-gateway-back]").addEventListener("click", () => {
+    const chars = getCharacters();
+    if (chars.length > 0) {
+      showCharacterSelect();
+    } else {
+      showChoices();
+    }
+  });
+
   form.elements.firstName.addEventListener("input", updatePreview);
   form.elements.lastName.addEventListener("input", updatePreview);
+
   function updatePreview() {
-    const first = form.elements.firstName.value.trim() || "Eddie";
-    const last = form.elements.lastName.value.trim() || "Alverez";
-    const full = [first, last].filter(Boolean).join(" ") || "Eddie Alverez";
-    $("#character-preview-name").textContent = full;
-    $("#character-monogram").textContent = (first[0] || "E").toUpperCase() + (last[0] || "A").toUpperCase();
+    const first = form.elements.firstName.value.trim() || "New";
+    const last = form.elements.lastName.value.trim() || "Yorker";
+    const full = [first, last].filter(Boolean).join(" ");
+    $("#character-preview-name").textContent = full || "Your character";
+    $("#character-monogram").textContent = (first[0] || "N").toUpperCase() + (last[0] || "Y").toUpperCase();
   }
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const submit = form.querySelector('[type="submit"]');
@@ -1964,9 +2054,14 @@ function setupOnboarding() {
       $("#character-create-error").textContent = "Enter a valid character date of birth.";
       return;
     }
+    const chars = getCharacters();
+    if (chars.length >= MAX_CHARACTERS) {
+      $("#character-create-error").textContent = "You already have " + MAX_CHARACTERS + " characters. Delete one to create another.";
+      return;
+    }
     const name = (firstName + " " + lastName).slice(0, 36);
-    profile = {
-      ...profile,
+    const newChar = {
+      ...defaultProfile,
       name, firstName, lastName, dob,
       pronouns: String(data.get("pronouns") || "Male"),
       height: String(data.get("height") || "").trim() || "5'9\"",
@@ -1975,8 +2070,9 @@ function setupOnboarding() {
       occupation: String(data.get("occupation") || "").trim() || "None",
       borough: String(data.get("borough") || "Manhattan"),
       neighborhood: String(data.get("neighborhood") || "").trim() || "Downtown",
-      idNo: profile.idNo || "4C5F46CC"
+      idNo: makeId()
     };
+    profile = { ...newChar };
     submit.disabled = true;
     submit.querySelector("span").textContent = "Creating character…";
     $("#character-create-error").textContent = "";
@@ -1986,7 +2082,7 @@ function setupOnboarding() {
       gateway.hidden = true;
       document.body.classList.remove("onboarding-open");
       activatePage("profile", true);
-      showToast("Your civilian character has been created.");
+      showToast("Character created. Welcome to New York City, " + firstName + ".");
     } catch (error) {
       $("#character-create-error").textContent = error.message || "Could not save your character. Please try again.";
     } finally {
@@ -1994,6 +2090,10 @@ function setupOnboarding() {
       submit.querySelector("span").textContent = "Create my character";
     }
   });
+
+  // Show gateway
+  gateway.hidden = false;
+  document.body.classList.add("onboarding-open");
 }
 
 async function initialize() {
